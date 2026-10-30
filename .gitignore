@@ -1,0 +1,20 @@
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node / Next.js (added when the frontend is initialized)
+frontend/node_modules/
+frontend/.next/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
