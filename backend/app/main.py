@@ -1,10 +1,10 @@
 from datetime import date, time
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas.task import TaskCreate, TaskPriority, TaskResponse
+from app.schemas.task import TaskCompletionUpdate, TaskCreate, TaskPriority, TaskResponse
 
 
 app = FastAPI(
@@ -83,3 +83,18 @@ async def create_task(task: TaskCreate) -> TaskResponse:
     )
     TASKS.append(created_task)
     return created_task
+
+
+@app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
+async def update_task_completion(
+    task_id: UUID,
+    task_update: TaskCompletionUpdate,
+) -> TaskResponse:
+    """Update a task's completion state in temporary memory."""
+    for index, task in enumerate(TASKS):
+        if task.id == task_id:
+            updated_task = task.model_copy(update=task_update.model_dump())
+            TASKS[index] = updated_task
+            return updated_task
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")

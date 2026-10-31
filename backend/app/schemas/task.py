@@ -38,6 +38,12 @@ class TaskCreate(TaskBase):
     """Fields accepted when a client creates a task."""
 
 
+class TaskCompletionUpdate(BaseModel):
+    """The single task field that can be changed in this API step."""
+
+    is_completed: bool
+
+
 class TaskResponse(TaskBase):
     """The task shape returned to API clients."""
 

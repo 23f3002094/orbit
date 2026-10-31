@@ -6,7 +6,11 @@ import { useEffect, useState } from "react";
 
 import type { Task } from "@/types/task";
 
-interface FocusSpaceProps { task: Task; onExit: () => void; }
+interface FocusSpaceProps {
+  task: Task;
+  onExit: () => void;
+  onUpdateCompletion: (isCompleted: boolean) => Promise<void>;
+}
 
 const WORK_MINUTES = 25;
 
@@ -15,10 +19,11 @@ function formatRemaining(seconds: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export function FocusSpace({ task, onExit }: FocusSpaceProps) {
+export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(WORK_MINUTES * 60);
   const [isRunning, setIsRunning] = useState(false);
-  const [isComplete, setIsComplete] = useState(task.is_completed);
+  const [isSavingCompletion, setIsSavingCompletion] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -35,6 +40,18 @@ export function FocusSpace({ task, onExit }: FocusSpaceProps) {
 
   const progress = ((WORK_MINUTES * 60 - remainingSeconds) / (WORK_MINUTES * 60)) * 100;
 
+  async function toggleCompletion() {
+    setCompletionError(null);
+    setIsSavingCompletion(true);
+    try {
+      await onUpdateCompletion(!task.is_completed);
+    } catch (requestError: unknown) {
+      setCompletionError(requestError instanceof Error ? requestError.message : "Orbit could not update that task.");
+    } finally {
+      setIsSavingCompletion(false);
+    }
+  }
+
   return (
     <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[#070b17] px-5 py-8 text-slate-100">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_12%,rgba(102,126,234,0.25),transparent_32%),radial-gradient(circle_at_80%_85%,rgba(45,212,191,0.15),transparent_28%)]" />
@@ -47,8 +64,9 @@ export function FocusSpace({ task, onExit }: FocusSpaceProps) {
         <div className="flex flex-wrap justify-center gap-3">
           <button className="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-teal-300 px-5 py-3 font-medium text-slate-950 transition hover:bg-teal-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300" onClick={() => setIsRunning((running) => !running)}>{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause" : "Start"}</button>
           <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300" onClick={() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); }}><RotateCcw size={18} /> Reset</button>
-          <button className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300 ${isComplete ? "bg-emerald-300/15 text-emerald-200" : "bg-white/5 text-slate-200 hover:bg-white/10"}`} onClick={() => setIsComplete((complete) => !complete)}><Check size={18} /> {isComplete ? "Completed" : "Mark complete"}</button>
+          <button disabled={isSavingCompletion} className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300 disabled:cursor-not-allowed disabled:opacity-60 ${task.is_completed ? "bg-emerald-300/15 text-emerald-200" : "bg-white/5 text-slate-200 hover:bg-white/10"}`} onClick={toggleCompletion}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Completed" : "Mark complete"}</button>
         </div>
+        {completionError && <p role="alert" className="mt-5 text-center text-sm text-rose-200">{completionError}</p>}
         <p className="mt-8 flex items-center justify-center gap-2 text-center text-sm text-slate-500"><TimerReset size={15} /> A simple 25-minute session for now. Session logging comes next.</p>
       </motion.section>
     </main>

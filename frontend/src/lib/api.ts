@@ -22,3 +22,14 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
 
   return response.json() as Promise<Task>;
 }
+
+export async function updateTaskCompletion(taskId: string, isCompleted: boolean): Promise<Task> {
+  const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_completed: isCompleted }),
+  });
+
+  if (!response.ok) throw new Error("Orbit could not update that task.");
+  return response.json() as Promise<Task>;
+}

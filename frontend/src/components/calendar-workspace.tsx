@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { FocusSpace } from "@/components/focus-space";
 import { TaskForm } from "@/components/task-form";
-import { getTasks } from "@/lib/api";
+import { getTasks, updateTaskCompletion } from "@/lib/api";
 import type { Task } from "@/types/task";
 
 const eventColors = {
@@ -61,7 +61,14 @@ export function CalendarWorkspace() {
     setIsCreating(false);
   }
 
-  if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} />;
+  async function updateActiveTaskCompletion(isCompleted: boolean) {
+    if (!activeTask) return;
+    const updatedTask = await updateTaskCompletion(activeTask.id, isCompleted);
+    setTasks((currentTasks) => currentTasks.map((task) => task.id === updatedTask.id ? updatedTask : task));
+    setActiveTask(updatedTask);
+  }
+
+  if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} />;
 
   return (
     <main className="min-h-screen bg-[#090d18] text-slate-100">
