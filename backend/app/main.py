@@ -1,10 +1,10 @@
 from datetime import date, time
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas.task import TaskPriority, TaskResponse
+from app.schemas.task import TaskCreate, TaskPriority, TaskResponse
 
 
 app = FastAPI(
@@ -66,3 +66,20 @@ async def health_check() -> dict[str, str]:
 async def list_tasks() -> list[TaskResponse]:
     """Return the temporary task collection."""
     return TASKS
+
+
+@app.post(
+    "/tasks",
+    response_model=TaskResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["tasks"],
+)
+async def create_task(task: TaskCreate) -> TaskResponse:
+    """Create a task in temporary memory."""
+    created_task = TaskResponse(
+        id=uuid4(),
+        is_completed=False,
+        **task.model_dump(),
+    )
+    TASKS.append(created_task)
+    return created_task

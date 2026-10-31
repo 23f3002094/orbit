@@ -21,13 +21,17 @@ export function FocusSpace({ task, onExit }: FocusSpaceProps) {
   const [isComplete, setIsComplete] = useState(task.is_completed);
   const prefersReducedMotion = useReducedMotion();
 
-  useEffect(() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); setIsComplete(task.is_completed); }, [task]);
   useEffect(() => {
     if (!isRunning || remainingSeconds === 0) return;
-    const timer = window.setInterval(() => setRemainingSeconds((current) => Math.max(0, current - 1)), 1000);
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((current) => {
+        const next = Math.max(0, current - 1);
+        if (next === 0) setIsRunning(false);
+        return next;
+      });
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [isRunning, remainingSeconds]);
-  useEffect(() => { if (remainingSeconds === 0) setIsRunning(false); }, [remainingSeconds]);
 
   const progress = ((WORK_MINUTES * 60 - remainingSeconds) / (WORK_MINUTES * 60)) * 100;
 

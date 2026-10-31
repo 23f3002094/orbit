@@ -11,3 +11,13 @@ export interface Task {
   estimated_minutes: number | null;
   is_completed: boolean;
 }
+
+export interface CreateTaskInput {
+  title: string;
+  scheduled_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  priority: TaskPriority;
+  category: string;
+  estimated_minutes: number | null;
+}
