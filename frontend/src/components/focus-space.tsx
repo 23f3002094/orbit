@@ -154,9 +154,9 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
   const subtaskProgress = subtasks.length ? (completedSubtasks / subtasks.length) * 100 : 0;
   const accent = task.color;
   const vibeBackgrounds: Record<Vibe, string> = {
-    forest: `radial-gradient(ellipse at 15% 15%, ${withAlpha(accent, "45")}, transparent 28%), radial-gradient(ellipse at 85% 82%, rgba(255,48,48,.22), transparent 27%), linear-gradient(135deg, #030504, #08140c 48%, #150606)`,
-    ember: `radial-gradient(ellipse at 20% 15%, ${withAlpha(accent, "36")}, transparent 30%), radial-gradient(ellipse at 80% 75%, rgba(255,83,45,.32), transparent 30%), linear-gradient(135deg, #120504, #190b07 48%, #070303)`,
-    night: `radial-gradient(ellipse at 18% 18%, ${withAlpha(accent, "34")}, transparent 30%), radial-gradient(ellipse at 82% 76%, rgba(90,110,255,.27), transparent 28%), linear-gradient(135deg, #03040b, #080b1d 50%, #050306)`,
+    forest: `radial-gradient(ellipse at 15% 15%, ${withAlpha(accent, "45")}, transparent 28%), radial-gradient(ellipse at 85% 82%, rgba(255,48,48,.22), transparent 27%), linear-gradient(135deg, var(--focus-a), var(--focus-b) 48%, var(--focus-c))`,
+    ember: `radial-gradient(ellipse at 20% 15%, ${withAlpha(accent, "36")}, transparent 30%), radial-gradient(ellipse at 80% 75%, rgba(255,83,45,.24), transparent 30%), linear-gradient(135deg, var(--focus-c), var(--focus-b) 48%, var(--focus-a))`,
+    night: `radial-gradient(ellipse at 18% 18%, ${withAlpha(accent, "34")}, transparent 30%), radial-gradient(ellipse at 82% 76%, rgba(90,110,255,.20), transparent 28%), linear-gradient(135deg, var(--focus-a), var(--focus-b) 50%, var(--focus-c))`,
   };
 
   async function toggleTaskCompletion() {
@@ -248,7 +248,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
     <main className="relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8">
       {youtubeId && <iframe id="orbit-youtube-player" title="YouTube focus ambience" onLoad={() => updateVideoVolume(videoVolume)} className="absolute inset-0 size-full scale-110 opacity-80" src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&controls=1&rel=0&enablejsapi=1`} allow="autoplay; encrypted-media; picture-in-picture" />}
       {wallpaper && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${wallpaper})` }} />}
-      <div className="pointer-events-none absolute inset-0" style={{ background: wallpaper || youtubeId ? "rgba(0, 0, 0, .65)" : vibeBackgrounds[vibe] }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: wallpaper || youtubeId ? "var(--focus-media-overlay)" : vibeBackgrounds[vibe] }} />
       <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:radial-gradient(rgba(255,255,255,.75)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
 
       <header className="relative z-20 flex items-center justify-between gap-3">
