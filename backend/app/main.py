@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -6,10 +7,12 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.focus_session import FocusSession
 from app.models.subtask import Subtask
 from app.models.task import Task
 from app.schemas.task import TaskCompletionUpdate, TaskCreate, TaskResponse
 from app.schemas.subtask import SubtaskCompletionUpdate, SubtaskCreate, SubtaskResponse
+from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse
 
 
 app = FastAPI(
@@ -122,3 +125,54 @@ def update_subtask_completion(
     db.commit()
     db.refresh(subtask)
     return subtask
+
+
+@app.post(
+    "/focus-sessions",
+    response_model=FocusSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["focus"],
+)
+def create_focus_session(
+    focus_session: FocusSessionCreate,
+    db: Session = Depends(get_db),
+) -> FocusSessionResponse:
+    """Persist one completed work interval for later focus insights."""
+    if db.get(Task, focus_session.task_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+    created_session = FocusSession(**focus_session.model_dump())
+    db.add(created_session)
+    db.commit()
+    db.refresh(created_session)
+    return created_session
+
+
+@app.get("/focus-sessions/daily", response_model=list[DailyFocusSummary], tags=["focus"])
+def get_daily_focus_summary(
+    end_date: date,
+    days: int = 7,
+    db: Session = Depends(get_db),
+) -> list[DailyFocusSummary]:
+    """Return daily completed focus minutes for a dashboard date range."""
+    days = max(1, min(days, 90))
+    start_date = end_date - timedelta(days=days - 1)
+    statement = (
+        select(
+            FocusSession.focused_on,
+            func.coalesce(func.sum(FocusSession.duration_minutes), 0),
+            func.count(FocusSession.id),
+        )
+        .where(FocusSession.focused_on.between(start_date, end_date))
+        .group_by(FocusSession.focused_on)
+        .order_by(FocusSession.focused_on)
+    )
+    rows = db.execute(statement).all()
+    return [
+        DailyFocusSummary(
+            focused_on=focused_on,
+            focused_minutes=focused_minutes,
+            completed_pomodoros=completed_pomodoros,
+        )
+        for focused_on, focused_minutes, completed_pomodoros in rows
+    ]

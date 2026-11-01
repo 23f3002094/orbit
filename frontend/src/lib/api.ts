@@ -1,5 +1,6 @@
 import type { CreateTaskInput, Task } from "@/types/task";
 import type { Subtask } from "@/types/subtask";
+import type { DailyFocusSummary, FocusSession } from "@/types/focus";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
@@ -59,4 +60,25 @@ export async function updateSubtaskCompletion(subtaskId: string, isCompleted: bo
   });
   if (!response.ok) throw new Error("Orbit could not update that subtask.");
   return response.json() as Promise<Subtask>;
+}
+
+export async function createFocusSession(input: {
+  task_id: string;
+  focused_on: string;
+  duration_minutes: number;
+}): Promise<FocusSession> {
+  const response = await fetch(`${API_URL}/focus-sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw new Error("Orbit could not save this focus session.");
+  return response.json() as Promise<FocusSession>;
+}
+
+export async function getDailyFocusSummary(endDate: string, days = 7): Promise<DailyFocusSummary[]> {
+  const params = new URLSearchParams({ end_date: endDate, days: String(days) });
+  const response = await fetch(`${API_URL}/focus-sessions/daily?${params}`);
+  if (!response.ok) throw new Error("Orbit could not load your focus statistics.");
+  return response.json() as Promise<DailyFocusSummary[]>;
 }
