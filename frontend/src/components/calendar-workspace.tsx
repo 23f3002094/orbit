@@ -11,6 +11,7 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "reac
 
 import { FocusSpace } from "@/components/focus-space";
 import { TaskForm } from "@/components/task-form";
+import { CelebrationBurst } from "@/components/celebration-burst";
 import { getTaskStreak, getTasks, updateTask, updateTaskCompletion } from "@/lib/api";
 import type { Task } from "@/types/task";
 import type { TaskStreakSummary } from "@/types/focus";
@@ -37,6 +38,7 @@ export function CalendarWorkspace() {
   const [streak, setStreak] = useState<TaskStreakSummary>({ current_streak: 0, longest_streak: 0, last_completed_date: null });
   const [initialSchedule, setInitialSchedule] = useState<{ date: string; startTime: string; endTime: string } | undefined>();
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<HoveredTimeSlot | null>(null);
+  const [celebration, setCelebration] = useState<{ kind: "welcome" | "task"; signal: number }>({ kind: "welcome", signal: 1 });
   const refreshStreak = useCallback(() => {
     getTaskStreak(localDateString(new Date())).then(setStreak).catch(() => { /* Dashboard remains usable when insights are unavailable. */ });
   }, []);
@@ -47,7 +49,7 @@ export function CalendarWorkspace() {
   const completedCount = tasks.filter((task) => task.is_completed).length;
   const focusMinutes = tasks.reduce((total, task) => total + (task.estimated_minutes ?? 0), 0);
   function openFocusSpace(clickInfo: EventClickArg) { const task = clickInfo.event.extendedProps.task as Task | undefined; if (task) setActiveTask(task); }
-  function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); refreshStreak(); }
+  function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); setCelebration((current) => ({ kind: "task", signal: current.signal + 1 })); refreshStreak(); }
   function updateSavedTask(task: Task) { setTasks((currentTasks) => currentTasks.map((item) => item.id === task.id ? task : item)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
   function removeDeletedTask(taskId: string) { setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
   function formatTimeForInput(date: Date) { return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`; }
@@ -97,6 +99,7 @@ export function CalendarWorkspace() {
 
   return (
     <main className="min-h-screen bg-[#040604] text-[#effaf1]">
+      <CelebrationBurst kind={celebration.kind} signal={celebration.signal} />
       <div className="mx-auto max-w-[1700px] px-4 py-5 sm:px-7 sm:py-7">
         <header className="mb-6 flex flex-col gap-5 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(115deg,rgba(255,159,67,.16),rgba(20,8,5,.78)_40%,rgba(220,74,32,.10))] p-5 shadow-2xl shadow-black/25 backdrop-blur sm:p-7 lg:flex-row lg:items-end lg:justify-between">
           <div><div className="mb-5 flex items-center gap-3"><div className="grid size-11 place-items-center rounded-2xl bg-[#46ff96] text-black shadow-lg shadow-[#46ff96]/20"><Sparkles size={20} /></div><span className="text-sm font-bold tracking-[0.18em] text-[#9cffc5]">ORBIT</span></div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a8a]">Plan with intention</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Your time has a shape.</h1><p className="mt-2 max-w-xl text-sm leading-6 text-[#aebdb2]">Click empty slots to create. Drag events to reschedule, or drag their lower edge to change duration.</p></div>
