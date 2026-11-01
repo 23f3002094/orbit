@@ -1,6 +1,6 @@
 import type { CreateTaskInput, Task } from "@/types/task";
 import type { Subtask } from "@/types/subtask";
-import type { DailyFocusSummary, FocusSession } from "@/types/focus";
+import type { DailyFocusSummary, FocusSession, TaskStreakSummary } from "@/types/focus";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
@@ -97,4 +97,10 @@ export async function getFocusSessions(startDate: string, endDate: string): Prom
   const response = await fetch(`${API_URL}/focus-sessions?${params}`);
   if (!response.ok) throw new Error("Orbit could not load your focus timeline.");
   return response.json() as Promise<FocusSession[]>;
+}
+
+export async function getTaskStreak(endDate: string): Promise<TaskStreakSummary> {
+  const response = await fetch(`${API_URL}/insights/task-streak?end_date=${endDate}`);
+  if (!response.ok) throw new Error("Orbit could not load your task streak.");
+  return response.json() as Promise<TaskStreakSummary>;
 }

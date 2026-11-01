@@ -5,14 +5,15 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, { type DateClickArg, type EventResizeDoneArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Plus, Sparkles, Target } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Flame, Plus, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { FocusSpace } from "@/components/focus-space";
 import { TaskForm } from "@/components/task-form";
-import { getTasks, updateTask, updateTaskCompletion } from "@/lib/api";
+import { getTaskStreak, getTasks, updateTask, updateTaskCompletion } from "@/lib/api";
 import type { Task } from "@/types/task";
+import type { TaskStreakSummary } from "@/types/focus";
 
 const priorityColors = { must_do: "#ff5151", should_do: "#46ff96", could_do: "#a3ccae" } as const;
 interface HoveredTimeSlot { left: number; top: number; width: number; height: number; }
@@ -22,6 +23,10 @@ function taskToEvent(task: Task): EventInput {
   return { id: task.id, title: task.title, start: isTimed ? `${task.scheduled_date}T${task.start_time}` : task.scheduled_date, end: isTimed && task.end_time ? `${task.scheduled_date}T${task.end_time}` : undefined, allDay: !isTimed, backgroundColor: task.color, borderColor: task.color, textColor: "#071009", classNames: task.is_completed ? ["orbit-event-complete"] : [], extendedProps: { task } };
 }
 
+function localDateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function CalendarWorkspace() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -29,17 +34,22 @@ export function CalendarWorkspace() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>();
+  const [streak, setStreak] = useState<TaskStreakSummary>({ current_streak: 0, longest_streak: 0, last_completed_date: null });
   const [initialSchedule, setInitialSchedule] = useState<{ date: string; startTime: string; endTime: string } | undefined>();
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<HoveredTimeSlot | null>(null);
+  const refreshStreak = useCallback(() => {
+    getTaskStreak(localDateString(new Date())).then(setStreak).catch(() => { /* Dashboard remains usable when insights are unavailable. */ });
+  }, []);
 
   useEffect(() => { getTasks().then(setTasks).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load your tasks.")).finally(() => setIsLoading(false)); }, []);
+  useEffect(() => { refreshStreak(); }, [refreshStreak]);
   const events = useMemo(() => tasks.map(taskToEvent), [tasks]);
   const completedCount = tasks.filter((task) => task.is_completed).length;
   const focusMinutes = tasks.reduce((total, task) => total + (task.estimated_minutes ?? 0), 0);
   function openFocusSpace(clickInfo: EventClickArg) { const task = clickInfo.event.extendedProps.task as Task | undefined; if (task) setActiveTask(task); }
-  function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); }
-  function updateSavedTask(task: Task) { setTasks((currentTasks) => currentTasks.map((item) => item.id === task.id ? task : item)); setTaskToEdit(undefined); setIsCreating(false); }
-  function removeDeletedTask(taskId: string) { setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId)); setTaskToEdit(undefined); setIsCreating(false); }
+  function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); refreshStreak(); }
+  function updateSavedTask(task: Task) { setTasks((currentTasks) => currentTasks.map((item) => item.id === task.id ? task : item)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
+  function removeDeletedTask(taskId: string) { setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
   function formatTimeForInput(date: Date) { return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`; }
   function openTaskFormForSlot(clickInfo: DateClickArg) {
     const date = clickInfo.dateStr.slice(0, 10);
@@ -82,7 +92,7 @@ export function CalendarWorkspace() {
     const nextSlot = { left: columnRect.left, top: slotRect.top, width: columnRect.width, height: slotRect.height };
     setHoveredTimeSlot((current) => current && current.left === nextSlot.left && current.top === nextSlot.top && current.width === nextSlot.width && current.height === nextSlot.height ? current : nextSlot);
   }
-  async function updateActiveTaskCompletion(isCompleted: boolean) { if (!activeTask) return; const updatedTask = await updateTaskCompletion(activeTask.id, isCompleted); setTasks((currentTasks) => currentTasks.map((task) => task.id === updatedTask.id ? updatedTask : task)); setActiveTask(updatedTask); }
+  async function updateActiveTaskCompletion(isCompleted: boolean) { if (!activeTask) return; const updatedTask = await updateTaskCompletion(activeTask.id, isCompleted); setTasks((currentTasks) => currentTasks.map((task) => task.id === updatedTask.id ? updatedTask : task)); setActiveTask(updatedTask); refreshStreak(); }
   if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} onEdit={() => { setTaskToEdit(activeTask); setActiveTask(null); setIsCreating(true); }} />;
 
   return (
@@ -90,7 +100,7 @@ export function CalendarWorkspace() {
       <div className="mx-auto max-w-[1700px] px-4 py-5 sm:px-7 sm:py-7">
         <header className="mb-6 flex flex-col gap-5 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(115deg,rgba(70,255,150,.10),rgba(3,5,4,.75)_40%,rgba(255,81,81,.08))] p-5 shadow-2xl shadow-black/25 backdrop-blur sm:p-7 lg:flex-row lg:items-end lg:justify-between">
           <div><div className="mb-5 flex items-center gap-3"><div className="grid size-11 place-items-center rounded-2xl bg-[#46ff96] text-black shadow-lg shadow-[#46ff96]/20"><Sparkles size={20} /></div><span className="text-sm font-bold tracking-[0.18em] text-[#9cffc5]">ORBIT</span></div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ff8a8a]">Plan with intention</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Your time has a shape.</h1><p className="mt-2 max-w-xl text-sm leading-6 text-[#aebdb2]">Click empty slots to create. Drag events to reschedule, or drag their lower edge to change duration.</p></div>
-          <div className="flex flex-wrap items-center gap-3"><div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8c9a90]">Promises kept</p><p className="mt-1 text-xl font-semibold text-[#46ff96]">{completedCount}<span className="text-sm text-[#839087]"> / {tasks.length}</span></p></div><div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8c9a90]">Planned focus</p><p className="mt-1 text-xl font-semibold text-white">{focusMinutes}<span className="text-sm text-[#839087]"> min</span></p></div><button onClick={() => { setInitialSchedule(undefined); setTaskToEdit(undefined); setIsCreating(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-[#46ff96] px-4 py-3.5 font-bold text-black shadow-lg shadow-[#46ff96]/15 transition hover:bg-[#96ffc1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#46ff96]"><Plus size={18} /> New task</button></div>
+          <div className="flex flex-wrap items-center gap-3"><div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8c9a90]">Promises kept</p><p className="mt-1 text-xl font-semibold text-[#46ff96]">{completedCount}<span className="text-sm text-[#839087]"> / {tasks.length}</span></p></div><div className="rounded-2xl border border-[#ff7a3d]/20 bg-[#ff7a3d]/[0.06] px-4 py-3"><p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#ffad7f]"><Flame size={12} fill="currentColor" /> Current streak</p><p className="mt-1 text-xl font-semibold text-[#ff914d]">{streak.current_streak}<span className="text-sm text-[#b87e5d]"> days</span></p></div><div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8c9a90]">Planned focus</p><p className="mt-1 text-xl font-semibold text-white">{focusMinutes}<span className="text-sm text-[#839087]"> min</span></p></div><button onClick={() => { setInitialSchedule(undefined); setTaskToEdit(undefined); setIsCreating(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-[#46ff96] px-4 py-3.5 font-bold text-black shadow-lg shadow-[#46ff96]/15 transition hover:bg-[#96ffc1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#46ff96]"><Plus size={18} /> New task</button></div>
         </header>
 
         <section className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)_260px]">

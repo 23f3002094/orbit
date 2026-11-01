@@ -12,7 +12,7 @@ from app.models.subtask import Subtask
 from app.models.task import Task
 from app.schemas.task import TaskBase, TaskCreate, TaskResponse, TaskUpdate
 from app.schemas.subtask import SubtaskCompletionUpdate, SubtaskCreate, SubtaskResponse
-from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse
+from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse, TaskStreakSummary
 
 
 app = FastAPI(
@@ -215,3 +215,43 @@ def list_focus_sessions(
         .order_by(FocusSession.completed_at)
     )
     return list(db.scalars(statement))
+
+
+@app.get("/insights/task-streak", response_model=TaskStreakSummary, tags=["insights"])
+def get_task_streak(end_date: date, db: Session = Depends(get_db)) -> TaskStreakSummary:
+    """Calculate completed planned-day streaks from scheduled tasks."""
+    tasks = list(db.scalars(select(Task).where(Task.scheduled_date <= end_date)))
+    by_date: dict[date, list[Task]] = {}
+    for task in tasks:
+        by_date.setdefault(task.scheduled_date, []).append(task)
+
+    completed_dates = {
+        scheduled_date
+        for scheduled_date, day_tasks in by_date.items()
+        if all(task.is_completed for task in day_tasks)
+    }
+    incomplete_dates = set(by_date) - completed_dates
+
+    current_streak = 0
+    cursor = end_date
+    while cursor >= min(by_date, default=end_date):
+        if cursor in incomplete_dates:
+            break
+        if cursor in completed_dates:
+            current_streak += 1
+        cursor -= timedelta(days=1)
+
+    longest_streak = 0
+    running_streak = 0
+    for scheduled_date in sorted(by_date):
+        if scheduled_date in completed_dates:
+            running_streak += 1
+            longest_streak = max(longest_streak, running_streak)
+        else:
+            running_streak = 0
+
+    return TaskStreakSummary(
+        current_streak=current_streak,
+        longest_streak=longest_streak,
+        last_completed_date=max(completed_dates, default=None),
+    )

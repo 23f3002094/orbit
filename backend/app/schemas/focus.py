@@ -26,3 +26,9 @@ class DailyFocusSummary(BaseModel):
     focused_on: date
     focused_minutes: int
     completed_pomodoros: int
+
+
+class TaskStreakSummary(BaseModel):
+    current_streak: int
+    longest_streak: int
+    last_completed_date: date | None

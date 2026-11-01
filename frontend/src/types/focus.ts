@@ -11,3 +11,9 @@ export interface DailyFocusSummary {
   focused_minutes: number;
   completed_pomodoros: number;
 }
+
+export interface TaskStreakSummary {
+  current_streak: number;
+  longest_streak: number;
+  last_completed_date: string | null;
+}
