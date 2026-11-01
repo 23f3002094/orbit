@@ -26,6 +26,10 @@ function formatRemaining(seconds: number): string {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function withAlpha(hexColor: string, alpha: string): string {
+  return `${hexColor}${alpha}`;
+}
+
 function DraggableWidget({ anchorClassName, children, label }: DraggableWidgetProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
@@ -82,6 +86,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
 
   const progress = ((WORK_MINUTES * 60 - remainingSeconds) / (WORK_MINUTES * 60)) * 100;
   const completedSubtasks = subtasks.filter((subtask) => subtask.is_completed).length;
+  const accent = task.color;
 
   async function toggleTaskCompletion() {
     setError(null);
@@ -118,7 +123,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8">
       {wallpaper && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${wallpaper})` }} />}
-      <div className={`pointer-events-none absolute inset-0 ${wallpaper ? "bg-black/65" : "bg-[radial-gradient(ellipse_at_15%_15%,rgba(41,255,130,.26),transparent_28%),radial-gradient(ellipse_at_85%_82%,rgba(255,48,48,.22),transparent_27%),linear-gradient(135deg,#030504,#08140c_48%,#150606)]"}`} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: wallpaper ? "rgba(0, 0, 0, .65)" : `radial-gradient(ellipse at 15% 15%, ${withAlpha(accent, "45")}, transparent 28%), radial-gradient(ellipse at 85% 82%, rgba(255,48,48,.22), transparent 27%), linear-gradient(135deg, #030504, #08140c 48%, #150606)` }} />
       <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:radial-gradient(rgba(255,255,255,.75)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
 
       <header className="relative z-20 flex items-center justify-between gap-3">
@@ -127,17 +132,17 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
       </header>
 
       <motion.section initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45 }} className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-4xl flex-col items-center justify-center py-24 text-center">
-        <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#46ff96]/30 bg-[#46ff96]/10 px-3 py-1.5 text-xs font-bold tracking-[0.18em] text-[#8dffbd]"><Sparkles size={14} /> MAKE THIS MOMENT COUNT</span>
+        <span className="mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold tracking-[0.18em]" style={{ borderColor: withAlpha(accent, "66"), backgroundColor: withAlpha(accent, "1f"), color: accent }}><Sparkles size={14} /> MAKE THIS MOMENT COUNT</span>
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#ff8b8b]">{task.category} / {task.priority.replace("_", " ")}</p>
         <h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white drop-shadow-2xl sm:text-7xl">{task.title}</h1>
         <p className="mt-7 max-w-xl text-lg leading-8 text-[#d1ded4]">One task. One room. One honest promise to yourself.</p>
-        <div className="mt-10 flex flex-wrap justify-center gap-3"><button onClick={() => setIsRunning((running) => !running)} className="inline-flex items-center gap-2 rounded-2xl bg-[#46ff96] px-5 py-3.5 font-bold text-black shadow-lg shadow-[#46ff96]/20 transition hover:bg-[#8dffbd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#46ff96]">{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause the moment" : "Begin focus"}</button><button onClick={toggleTaskCompletion} disabled={isSavingCompletion} className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3.5 font-bold transition disabled:opacity-60 ${task.is_completed ? "border-[#46ff96] bg-[#46ff96]/15 text-[#8dffbd]" : "border-white/15 bg-black/25 text-white hover:border-[#46ff96]/60"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Promise kept" : "Mark promise kept"}</button></div>
-        <div className="mt-8 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold text-[#46ff96]">{completedSubtasks}</span> / {subtasks.length} focus steps completed</div>
+        <div className="mt-10 flex flex-wrap justify-center gap-3"><button onClick={() => setIsRunning((running) => !running)} style={{ backgroundColor: accent, boxShadow: `0 18px 36px ${withAlpha(accent, "33")}` }} className="inline-flex items-center gap-2 rounded-2xl px-5 py-3.5 font-bold text-black transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2" >{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause the moment" : "Begin focus"}</button><button onClick={toggleTaskCompletion} disabled={isSavingCompletion} style={task.is_completed ? { borderColor: accent, backgroundColor: withAlpha(accent, "26"), color: accent } : undefined} className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3.5 font-bold transition disabled:opacity-60 ${task.is_completed ? "" : "border-white/15 bg-black/25 text-white hover:border-white/45"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Promise kept" : "Mark promise kept"}</button></div>
+        <div className="mt-8 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold" style={{ color: accent }}>{completedSubtasks}</span> / {subtasks.length} focus steps completed</div>
         <p className="mt-10 text-xs text-[#a1afa5]">Drag both widgets anywhere in the room. Your wallpaper stays active for this session.</p>
       </motion.section>
 
       <DraggableWidget label="timer" anchorClassName="right-5 top-24 w-72 sm:right-8">
-        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#071109]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(#46ff96 ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#071109]"><span className="font-mono text-4xl font-semibold tracking-[-0.09em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9bad9f]">deep work</span></div></div></div><div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => setIsRunning((running) => !running)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#46ff96] px-2 py-2.5 text-xs font-bold text-black hover:bg-[#8dffbd]">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); }} className="rounded-xl border border-white/10 text-[#d8e4db] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff5151]/10 text-xs font-bold text-[#ff9898]">25:00</span></div></div>
+        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#071109]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(${accent} ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#071109]"><span className="font-mono text-4xl font-semibold tracking-[-0.09em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9bad9f]">deep work</span></div></div></div><div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => setIsRunning((running) => !running)} style={{ backgroundColor: accent }} className="inline-flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-bold text-black hover:brightness-110">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); }} className="rounded-xl border border-white/10 text-[#d8e4db] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff5151]/10 text-xs font-bold text-[#ff9898]">25:00</span></div></div>
       </DraggableWidget>
 
       <DraggableWidget label="focus steps" anchorClassName="bottom-5 left-5 w-[min(22rem,calc(100vw-2.5rem))] sm:bottom-8 sm:left-8">

@@ -8,6 +8,7 @@ export interface Task {
   end_time: string | null;
   priority: TaskPriority;
   category: string;
+  color: string;
   estimated_minutes: number | null;
   is_completed: boolean;
 }
@@ -19,5 +20,6 @@ export interface CreateTaskInput {
   end_time: string | null;
   priority: TaskPriority;
   category: string;
+  color: string;
   estimated_minutes: number | null;
 }

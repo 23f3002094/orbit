@@ -22,6 +22,7 @@ class TaskBase(BaseModel):
     end_time: time | None = None
     priority: TaskPriority
     category: str = Field(min_length=1, max_length=50)
+    color: str = Field(default="#46ff96", pattern=r"^#[0-9A-Fa-f]{6}$")
     estimated_minutes: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")

@@ -9,17 +9,23 @@ import type { CreateTaskInput, Task, TaskPriority } from "@/types/task";
 interface TaskFormProps {
   onClose: () => void;
   onCreated: (task: Task) => void;
+  initialSchedule?: {
+    date: string;
+    startTime: string;
+    endTime: string;
+  };
 }
 
 const inputClassName = "mt-1 w-full rounded-xl border border-white/10 bg-black/45 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-[#617168] focus:border-[#46ff96] focus:ring-2 focus:ring-[#46ff96]/20";
 
-export function TaskForm({ onClose, onCreated }: TaskFormProps) {
+export function TaskForm({ onClose, onCreated, initialSchedule }: TaskFormProps) {
   const [title, setTitle] = useState("");
-  const [scheduledDate, setScheduledDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(initialSchedule?.date ?? new Date().toISOString().slice(0, 10));
+  const [startTime, setStartTime] = useState(initialSchedule?.startTime ?? "");
+  const [endTime, setEndTime] = useState(initialSchedule?.endTime ?? "");
   const [priority, setPriority] = useState<TaskPriority>("should_do");
   const [category, setCategory] = useState("Personal");
+  const [color, setColor] = useState("#46ff96");
   const [estimatedMinutes, setEstimatedMinutes] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +45,7 @@ export function TaskForm({ onClose, onCreated }: TaskFormProps) {
       end_time: endTime || null,
       priority,
       category: category.trim(),
+      color,
       estimated_minutes: estimatedMinutes || null,
     };
 
@@ -61,6 +68,7 @@ export function TaskForm({ onClose, onCreated }: TaskFormProps) {
           <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium text-slate-200">Date<input required type="date" value={scheduledDate} onChange={(event) => setScheduledDate(event.target.value)} className={inputClassName} /></label><label className="block text-sm font-medium text-slate-200">Estimated minutes<input required min="1" type="number" value={estimatedMinutes} onChange={(event) => setEstimatedMinutes(Number(event.target.value))} className={inputClassName} /></label></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium text-slate-200">Start time<input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className={inputClassName} /></label><label className="block text-sm font-medium text-slate-200">End time<input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className={inputClassName} /></label></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium text-slate-200">Priority<select value={priority} onChange={(event) => setPriority(event.target.value as TaskPriority)} className={inputClassName}><option value="must_do">Must do</option><option value="should_do">Should do</option><option value="could_do">Could do</option></select></label><label className="block text-sm font-medium text-slate-200">Category<input required value={category} onChange={(event) => setCategory(event.target.value)} className={inputClassName} maxLength={50} /></label></div>
+          <label className="flex items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm font-medium text-slate-200">Task color<span className="flex items-center gap-3 text-xs text-[#aebdb2]"><span>{color}</span><input aria-label="Task color" type="color" value={color} onChange={(event) => setColor(event.target.value)} className="size-8 cursor-pointer rounded-md border-0 bg-transparent p-0" /></span></label>
           {error && <p role="alert" className="rounded-xl bg-[#ff5151]/10 px-3 py-2 text-sm text-[#ffaaaa]">{error}</p>}
           <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-medium text-[#aebdb2] transition hover:bg-white/10">Cancel</button><button disabled={isSubmitting} className="rounded-xl bg-[#46ff96] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#8dffbd] disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? "Adding..." : "Add to calendar"}</button></div>
         </form>
