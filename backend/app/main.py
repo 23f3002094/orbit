@@ -176,3 +176,18 @@ def get_daily_focus_summary(
         )
         for focused_on, focused_minutes, completed_pomodoros in rows
     ]
+
+
+@app.get("/focus-sessions", response_model=list[FocusSessionResponse], tags=["focus"])
+def list_focus_sessions(
+    start_date: date,
+    end_date: date,
+    db: Session = Depends(get_db),
+) -> list[FocusSessionResponse]:
+    """Return completed focus intervals for a visual timeline."""
+    statement = (
+        select(FocusSession)
+        .where(FocusSession.focused_on.between(start_date, end_date))
+        .order_by(FocusSession.completed_at)
+    )
+    return list(db.scalars(statement))

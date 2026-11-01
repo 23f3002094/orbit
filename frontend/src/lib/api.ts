@@ -82,3 +82,10 @@ export async function getDailyFocusSummary(endDate: string, days = 7): Promise<D
   if (!response.ok) throw new Error("Orbit could not load your focus statistics.");
   return response.json() as Promise<DailyFocusSummary[]>;
 }
+
+export async function getFocusSessions(startDate: string, endDate: string): Promise<FocusSession[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  const response = await fetch(`${API_URL}/focus-sessions?${params}`);
+  if (!response.ok) throw new Error("Orbit could not load your focus timeline.");
+  return response.json() as Promise<FocusSession[]>;
+}
