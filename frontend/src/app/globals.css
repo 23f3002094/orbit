@@ -37,10 +37,6 @@ body {
 .fc .fc-timegrid-slot-lane {
   transition: background-color .16s ease, box-shadow .16s ease;
 }
-.fc .fc-timegrid-slot-lane:hover {
-  background: rgba(70, 255, 150, .075);
-  box-shadow: inset 0 0 0 1px rgba(70, 255, 150, .38);
-}
 .fc .fc-daygrid-day-frame {
   min-height: 100%;
   transition: background-color .16s ease, box-shadow .16s ease;

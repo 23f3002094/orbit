@@ -6,7 +6,7 @@ import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction"
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { CalendarDays, CheckCircle2, ChevronRight, Clock3, Plus, Sparkles, Target } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { FocusSpace } from "@/components/focus-space";
 import { TaskForm } from "@/components/task-form";
@@ -14,6 +14,7 @@ import { getTasks, updateTaskCompletion } from "@/lib/api";
 import type { Task } from "@/types/task";
 
 const priorityColors = { must_do: "#ff5151", should_do: "#46ff96", could_do: "#a3ccae" } as const;
+interface HoveredTimeSlot { left: number; top: number; width: number; height: number; }
 
 function taskToEvent(task: Task): EventInput {
   const isTimed = Boolean(task.start_time);
@@ -27,6 +28,7 @@ export function CalendarWorkspace() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [initialSchedule, setInitialSchedule] = useState<{ date: string; startTime: string; endTime: string } | undefined>();
+  const [hoveredTimeSlot, setHoveredTimeSlot] = useState<HoveredTimeSlot | null>(null);
 
   useEffect(() => { getTasks().then(setTasks).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load your tasks.")).finally(() => setIsLoading(false)); }, []);
   const events = useMemo(() => tasks.map(taskToEvent), [tasks]);
@@ -44,6 +46,22 @@ export function CalendarWorkspace() {
     }
     setIsCreating(true);
   }
+  function trackTimeSlot(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    const timeGrid = target.closest(".fc-timegrid");
+    if (!timeGrid) { setHoveredTimeSlot(null); return; }
+    const elementsAtPointer = document.elementsFromPoint(event.clientX, event.clientY);
+    const column = elementsAtPointer.find((element) => element.classList.contains("fc-timegrid-col"));
+    const slot = Array.from(timeGrid.querySelectorAll<HTMLElement>(".fc-timegrid-slot-lane[data-time]")).find((element) => {
+      const rect = element.getBoundingClientRect();
+      return event.clientY >= rect.top && event.clientY < rect.bottom;
+    });
+    if (!column || !slot) { setHoveredTimeSlot(null); return; }
+    const columnRect = column.getBoundingClientRect();
+    const slotRect = slot.getBoundingClientRect();
+    const nextSlot = { left: columnRect.left, top: slotRect.top, width: columnRect.width, height: slotRect.height };
+    setHoveredTimeSlot((current) => current && current.left === nextSlot.left && current.top === nextSlot.top && current.width === nextSlot.width && current.height === nextSlot.height ? current : nextSlot);
+  }
   async function updateActiveTaskCompletion(isCompleted: boolean) { if (!activeTask) return; const updatedTask = await updateTaskCompletion(activeTask.id, isCompleted); setTasks((currentTasks) => currentTasks.map((task) => task.id === updatedTask.id ? updatedTask : task)); setActiveTask(updatedTask); }
   if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} />;
 
@@ -58,11 +76,12 @@ export function CalendarWorkspace() {
         <section className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)_260px]">
           <aside className="rounded-[1.75rem] border border-white/[0.08] bg-[#080b08] p-4"><p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.17em] text-[#8c9a90]">Your orbit</p><div className="space-y-1"><div className="flex items-center gap-3 rounded-xl bg-[#46ff96]/10 px-3 py-3 text-sm font-semibold text-[#9cffc5]"><CalendarDays size={17} /> Calendar</div><div className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#9fad9f]"><Target size={17} /> Focus sessions</div><div className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#9fad9f]"><CheckCircle2 size={17} /> Review later</div></div><div className="mt-8 rounded-2xl border border-[#ff5151]/20 bg-[#ff5151]/[0.06] p-4"><p className="text-xs font-bold text-[#ff9696]">Small reminder</p><p className="mt-2 text-sm leading-6 text-[#c7d0c9]">Do not plan a perfect week. Plan the next honest move.</p></div></aside>
 
-          <div className="min-h-[720px] rounded-[1.75rem] border border-white/[0.08] bg-[#080b08] p-3 shadow-2xl shadow-black/30 sm:p-5">{isLoading && <CalendarMessage title="Building your orbit" detail="Getting your schedule ready..." />}{error && <CalendarMessage title="Could not connect to Orbit API" detail={`${error} Start the FastAPI server on port 8000, then refresh.`} />}{!isLoading && !error && <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }} buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day" }} events={events} eventClick={openFocusSpace} dateClick={openTaskFormForSlot} nowIndicator allDayText="Unscheduled" slotMinTime="06:00:00" slotMaxTime="23:00:00" height="auto" dayMaxEventRows={3} eventTimeFormat={{ hour: "numeric", minute: "2-digit", meridiem: "short" }} />}</div>
+          <div onMouseMove={trackTimeSlot} onMouseLeave={() => setHoveredTimeSlot(null)} className="min-h-[720px] rounded-[1.75rem] border border-white/[0.08] bg-[#080b08] p-3 shadow-2xl shadow-black/30 sm:p-5">{isLoading && <CalendarMessage title="Building your orbit" detail="Getting your schedule ready..." />}{error && <CalendarMessage title="Could not connect to Orbit API" detail={`${error} Start the FastAPI server on port 8000, then refresh.`} />}{!isLoading && !error && <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }} buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day" }} events={events} eventClick={openFocusSpace} dateClick={openTaskFormForSlot} nowIndicator allDayText="Unscheduled" slotMinTime="06:00:00" slotMaxTime="23:00:00" height="auto" dayMaxEventRows={3} eventTimeFormat={{ hour: "numeric", minute: "2-digit", meridiem: "short" }} />}</div>
 
           <aside className="rounded-[1.75rem] border border-white/[0.08] bg-[#080b08] p-5"><div className="flex items-center gap-2 text-sm font-semibold text-white"><Clock3 size={17} className="text-[#46ff96]" /> Workload pulse</div><p className="mt-2 text-sm leading-6 text-[#8f9e93]">A calm view of what is asking for your energy.</p><div className="mt-6 space-y-3">{(["must_do", "should_do", "could_do"] as const).map((priority) => <div key={priority} className="rounded-2xl border border-white/[0.07] bg-black/25 p-3"><div className="mb-3 flex items-center justify-between text-sm capitalize text-[#cbd8ce]"><span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: priorityColors[priority] }} />{priority.replace("_", " ")}</span><ChevronRight size={15} className="text-[#607065]" /></div><p className="text-2xl font-semibold text-white">{tasks.filter((task) => task.priority === priority).length}</p></div>)}</div><div className="mt-6 rounded-2xl bg-[#46ff96]/10 p-4"><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8dffbb]">Focus hint</p><p className="mt-2 text-sm leading-6 text-[#d9e8dc]">Click an empty slot to plan there. Click a task when you are ready to focus.</p></div></aside>
         </section>
       </div>
+      {hoveredTimeSlot && <div className="pointer-events-none fixed z-10 rounded-md border border-[#46ff96]/70 bg-[#46ff96]/[0.07] shadow-[inset_0_0_18px_rgba(70,255,150,.10)]" style={hoveredTimeSlot} />}
       {isCreating && <TaskForm initialSchedule={initialSchedule} onClose={() => setIsCreating(false)} onCreated={addCreatedTask} />}
     </main>
   );
