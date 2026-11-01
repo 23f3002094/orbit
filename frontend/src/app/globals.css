@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #090d18;
-  --foreground: #f1f5f9;
+  --background: #040604;
+  --foreground: #effaf1;
 }
 
 @theme inline {
@@ -18,14 +18,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.fc { --fc-border-color: rgba(255,255,255,.09); --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,.025); --fc-today-bg-color: rgba(94,234,212,.045); --fc-small-font-size: .78rem; color: #cbd5e1; }
-.fc .fc-toolbar-title { color: #f8fafc; font-size: 1.05rem; font-weight: 600; }
-.fc .fc-button { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: .65rem; box-shadow: none; color: #cbd5e1; font-size: .75rem; font-weight: 500; padding: .45rem .7rem; text-transform: none; }
-.fc .fc-button:hover, .fc .fc-button:focus, .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(94,234,212,.16); border-color: rgba(94,234,212,.35); color: #ccfbf1; box-shadow: none; }
-.fc .fc-button:focus-visible { outline: 2px solid #5eead4; outline-offset: 2px; }
-.fc .fc-col-header-cell-cushion { color: #94a3b8; font-size: .72rem; font-weight: 600; padding: .75rem .2rem; text-transform: uppercase; letter-spacing: .08em; }
-.fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { color: #64748b; font-size: .7rem; }
-.fc .fc-event { border-radius: .45rem; box-shadow: none; cursor: pointer; font-size: .75rem; font-weight: 500; padding: .16rem .25rem; }
-.fc .fc-event:hover { filter: brightness(1.12); }
+.fc { --fc-border-color: rgba(255,255,255,.075); --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,.02); --fc-today-bg-color: rgba(70,255,150,.055); --fc-small-font-size: .78rem; color: #b8c6bc; }
+.fc .fc-toolbar { gap: .5rem; margin-bottom: 1.25rem; }
+.fc .fc-toolbar-title { color: #fff; font-size: 1.05rem; font-weight: 650; letter-spacing: -.02em; }
+.fc .fc-button { background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.1); border-radius: .7rem; box-shadow: none; color: #c7d4ca; font-size: .75rem; font-weight: 600; padding: .48rem .72rem; text-transform: none; }
+.fc .fc-button:hover, .fc .fc-button:focus, .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(70,255,150,.14); border-color: rgba(70,255,150,.42); color: #a4ffca; box-shadow: none; }
+.fc .fc-button:focus-visible { outline: 2px solid #46ff96; outline-offset: 2px; }
+.fc .fc-col-header-cell-cushion { color: #829087; font-size: .67rem; font-weight: 700; padding: .85rem .2rem; text-transform: uppercase; letter-spacing: .1em; }
+.fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { color: #637067; font-size: .7rem; }
+.fc .fc-event { border-radius: .5rem; box-shadow: none; cursor: pointer; font-size: .75rem; font-weight: 650; padding: .18rem .3rem; }
+.fc .fc-event:hover { filter: brightness(1.15); transform: translateY(-1px); }
 .fc .orbit-event-complete { opacity: .52; text-decoration: line-through; }
-.fc .fc-daygrid-day-number { color: #cbd5e1; font-size: .82rem; padding: .5rem; }
+.fc .fc-daygrid-day-number { color: #b8c6bc; font-size: .82rem; padding: .55rem; }

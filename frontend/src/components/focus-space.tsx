@@ -1,8 +1,8 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, GripVertical, Pause, Play, Plus, RotateCcw, Target } from "lucide-react";
-import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Check, Grip, ImagePlus, Pause, Play, Plus, RotateCcw, Sparkles, Target, Trash2 } from "lucide-react";
+import { type ChangeEvent, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { createSubtask, getSubtasks, updateSubtaskCompletion } from "@/lib/api";
 import type { Subtask } from "@/types/subtask";
@@ -14,10 +14,41 @@ interface FocusSpaceProps {
   onUpdateCompletion: (isCompleted: boolean) => Promise<void>;
 }
 
+interface DraggableWidgetProps {
+  anchorClassName: string;
+  children: ReactNode;
+  label: string;
+}
+
 const WORK_MINUTES = 25;
 
 function formatRemaining(seconds: number): string {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function DraggableWidget({ anchorClassName, children, label }: DraggableWidgetProps) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
+
+  function startDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    dragStart.current = { x: event.clientX, y: event.clientY, offsetX: offset.x, offsetY: offset.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!dragStart.current) return;
+    setOffset({
+      x: dragStart.current.offsetX + event.clientX - dragStart.current.x,
+      y: dragStart.current.offsetY + event.clientY - dragStart.current.y,
+    });
+  }
+
+  return (
+    <section className={`fixed z-30 ${anchorClassName}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}>
+      <div onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={() => { dragStart.current = null; }} className="flex cursor-grab touch-none items-center gap-2 rounded-t-[1.4rem] border border-b-0 border-white/10 bg-black/70 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ba79e] backdrop-blur-md active:cursor-grabbing" aria-label={`Drag ${label} anywhere in the room`}><Grip size={14} className="text-[#46ff96]" /> Drag {label}</div>
+      {children}
+    </section>
+  );
 }
 
 export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps) {
@@ -27,18 +58,13 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
   const [isSavingSubtask, setIsSavingSubtask] = useState(false);
+  const [wallpaper, setWallpaper] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timerPosition, setTimerPosition] = useState({ x: 0, y: 0 });
-  const dragStart = useRef<{ x: number; y: number; timerX: number; timerY: number } | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     let isCurrent = true;
-    getSubtasks(task.id).then((items) => {
-      if (isCurrent) setSubtasks(items);
-    }).catch(() => {
-      if (isCurrent) setError("Orbit could not load this session's subtasks.");
-    });
+    getSubtasks(task.id).then((items) => { if (isCurrent) setSubtasks(items); }).catch(() => { if (isCurrent) setError("Orbit could not load this task's subtasks."); });
     return () => { isCurrent = false; };
   }, [task.id]);
 
@@ -71,69 +97,53 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
     if (!title) return;
     setError(null);
     setIsSavingSubtask(true);
-    try {
-      const created = await createSubtask(task.id, title);
-      setSubtasks((items) => [...items, created]);
-      setNewSubtask("");
-    } catch (requestError: unknown) {
-      setError(requestError instanceof Error ? requestError.message : "Orbit could not create that subtask.");
-    } finally { setIsSavingSubtask(false); }
+    try { const created = await createSubtask(task.id, title); setSubtasks((items) => [...items, created]); setNewSubtask(""); }
+    catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not create that subtask."); }
+    finally { setIsSavingSubtask(false); }
   }
 
   async function toggleSubtask(subtask: Subtask) {
     setError(null);
-    try {
-      const updated = await updateSubtaskCompletion(subtask.id, !subtask.is_completed);
-      setSubtasks((items) => items.map((item) => item.id === updated.id ? updated : item));
-    } catch (requestError: unknown) {
-      setError(requestError instanceof Error ? requestError.message : "Orbit could not update that subtask.");
-    }
+    try { const updated = await updateSubtaskCompletion(subtask.id, !subtask.is_completed); setSubtasks((items) => items.map((item) => item.id === updated.id ? updated : item)); }
+    catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not update that subtask."); }
   }
 
-  function beginTimerDrag(event: ReactPointerEvent<HTMLDivElement>) {
-    dragStart.current = { x: event.clientX, y: event.clientY, timerX: timerPosition.x, timerY: timerPosition.y };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function moveTimer(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!dragStart.current) return;
-    const nextX = Math.max(-110, Math.min(110, dragStart.current.timerX + event.clientX - dragStart.current.x));
-    const nextY = Math.max(-90, Math.min(90, dragStart.current.timerY + event.clientY - dragStart.current.y));
-    setTimerPosition({ x: nextX, y: nextY });
+  function selectWallpaper(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please choose an image file for the wallpaper."); return; }
+    setWallpaper(URL.createObjectURL(file));
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030604] px-4 py-5 text-[#eafff1] sm:px-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_14%_18%,rgba(27,255,125,0.16),transparent_30%),radial-gradient(ellipse_at_86%_78%,rgba(255,54,54,0.13),transparent_28%),linear-gradient(120deg,#030604_20%,#07130c_50%,#090505)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:radial-gradient(rgba(255,255,255,.7)_0.6px,transparent_0.6px)] [background-size:5px_5px]" />
-      <button onClick={onExit} className="relative z-10 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-sm text-[#b9c9be] backdrop-blur transition hover:border-[#35ff93]/50 hover:text-[#eafff1] focus-visible:outline-2 focus-visible:outline-[#35ff93]"><ArrowLeft size={16} /> Return to calendar</button>
+    <main className="relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8">
+      {wallpaper && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${wallpaper})` }} />}
+      <div className={`pointer-events-none absolute inset-0 ${wallpaper ? "bg-black/65" : "bg-[radial-gradient(ellipse_at_15%_15%,rgba(41,255,130,.26),transparent_28%),radial-gradient(ellipse_at_85%_82%,rgba(255,48,48,.22),transparent_27%),linear-gradient(135deg,#030504,#08140c_48%,#150606)]"}`} />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:radial-gradient(rgba(255,255,255,.75)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
 
-      <motion.div initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="relative z-10 mx-auto grid min-h-[calc(100vh-7rem)] max-w-6xl items-center gap-10 py-10 lg:grid-cols-[1fr_360px]">
-        <section>
-          <div className="mb-7 flex items-center gap-3"><span className="inline-flex items-center gap-2 rounded-full border border-[#35ff93]/25 bg-[#35ff93]/10 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-[#7dffb6]"><Target size={14} /> FOCUS MODE</span><span className="text-xs uppercase tracking-[0.16em] text-[#ff7474]">{task.priority.replace("_", " ")}</span></div>
-          <p className="mb-3 text-sm font-medium text-[#86a18f]">{task.category} / {task.estimated_minutes ?? 25} minutes planned</p>
-          <h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.06] tracking-[-0.04em] text-white sm:text-6xl">{task.title}</h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-[#a9b9ae]">Make the next focused block count. Break this work into visible moves, then begin when you are ready.</p>
+      <header className="relative z-20 flex items-center justify-between gap-3">
+        <button onClick={onExit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-[#46ff96]"><ArrowLeft size={16} /> Return to calendar</button>
+        <div className="flex items-center gap-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><ImagePlus size={16} className="text-[#46ff96]" /> Add wallpaper<input onChange={selectWallpaper} accept="image/*" type="file" className="sr-only" /></label>{wallpaper && <button onClick={() => setWallpaper(null)} className="grid size-10 place-items-center rounded-full border border-white/10 bg-black/35 text-[#ff8b8b] backdrop-blur-md hover:border-[#ff5151]" aria-label="Remove custom wallpaper"><Trash2 size={16} /></button>}</div>
+      </header>
 
-          <div className="mt-12 grid max-w-xl gap-3 sm:grid-cols-2">
-            <button onClick={toggleTaskCompletion} disabled={isSavingCompletion} className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-4 font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35ff93] disabled:opacity-60 ${task.is_completed ? "bg-[#35ff93] text-black" : "border border-white/10 bg-white/[0.06] text-white hover:border-[#35ff93]/55 hover:bg-[#35ff93]/10"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Task complete" : "Mark task complete"}</button>
-            <div className="rounded-2xl border border-white/10 bg-black/25 px-5 py-4 text-sm text-[#b9c9be]"><span className="text-[#35ff93]">{completedSubtasks}</span> of {subtasks.length} session steps done</div>
-          </div>
-        </section>
+      <motion.section initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45 }} className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-4xl flex-col items-center justify-center py-24 text-center">
+        <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#46ff96]/30 bg-[#46ff96]/10 px-3 py-1.5 text-xs font-bold tracking-[0.18em] text-[#8dffbd]"><Sparkles size={14} /> MAKE THIS MOMENT COUNT</span>
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#ff8b8b]">{task.category} / {task.priority.replace("_", " ")}</p>
+        <h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white drop-shadow-2xl sm:text-7xl">{task.title}</h1>
+        <p className="mt-7 max-w-xl text-lg leading-8 text-[#d1ded4]">One task. One room. One honest promise to yourself.</p>
+        <div className="mt-10 flex flex-wrap justify-center gap-3"><button onClick={() => setIsRunning((running) => !running)} className="inline-flex items-center gap-2 rounded-2xl bg-[#46ff96] px-5 py-3.5 font-bold text-black shadow-lg shadow-[#46ff96]/20 transition hover:bg-[#8dffbd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#46ff96]">{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause the moment" : "Begin focus"}</button><button onClick={toggleTaskCompletion} disabled={isSavingCompletion} className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3.5 font-bold transition disabled:opacity-60 ${task.is_completed ? "border-[#46ff96] bg-[#46ff96]/15 text-[#8dffbd]" : "border-white/15 bg-black/25 text-white hover:border-[#46ff96]/60"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Promise kept" : "Mark promise kept"}</button></div>
+        <div className="mt-8 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold text-[#46ff96]">{completedSubtasks}</span> / {subtasks.length} focus steps completed</div>
+        <p className="mt-10 text-xs text-[#a1afa5]">Drag both widgets anywhere in the room. Your wallpaper stays active for this session.</p>
+      </motion.section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-black/35 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
-          <div className="mb-5 flex items-center justify-between"><h2 className="font-semibold text-white">Session breakdown</h2><span className="text-xs text-[#86a18f]">for this task</span></div>
-          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">{subtasks.length === 0 && <p className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-sm text-[#86a18f]">Add the first small action. Keep it concrete.</p>}{subtasks.map((subtask) => <button key={subtask.id} onClick={() => toggleSubtask(subtask)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/[0.05]"><span className={`grid size-5 shrink-0 place-items-center rounded-md border ${subtask.is_completed ? "border-[#35ff93] bg-[#35ff93] text-black" : "border-white/20"}`}>{subtask.is_completed && <Check size={13} strokeWidth={3} />}</span><span className={`text-sm ${subtask.is_completed ? "text-[#718077] line-through" : "text-[#edf6ef]"}`}>{subtask.title}</span></button>)}</div>
-          <form onSubmit={addSubtask} className="mt-4 flex gap-2 border-t border-white/10 pt-4"><label className="sr-only" htmlFor="subtask-title">Add a session step</label><input id="subtask-title" value={newSubtask} onChange={(event) => setNewSubtask(event.target.value)} maxLength={200} placeholder="Add a small next step" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#617168] focus:border-[#35ff93]" /><button disabled={isSavingSubtask} className="grid size-10 place-items-center rounded-xl bg-[#35ff93] text-black transition hover:bg-[#85ffb5] disabled:opacity-60" aria-label="Add subtask"><Plus size={18} /></button></form>
-        </section>
-      </motion.div>
+      <DraggableWidget label="timer" anchorClassName="right-5 top-24 w-72 sm:right-8">
+        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#071109]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(#46ff96 ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#071109]"><span className="font-mono text-4xl font-semibold tracking-[-0.09em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9bad9f]">deep work</span></div></div></div><div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => setIsRunning((running) => !running)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#46ff96] px-2 py-2.5 text-xs font-bold text-black hover:bg-[#8dffbd]">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); }} className="rounded-xl border border-white/10 text-[#d8e4db] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff5151]/10 text-xs font-bold text-[#ff9898]">25:00</span></div></div>
+      </DraggableWidget>
 
-      <section style={{ transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)` }} className="fixed bottom-5 right-5 z-20 w-72 rounded-[1.75rem] border border-[#35ff93]/25 bg-[#07120b]/90 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl sm:bottom-8 sm:right-8">
-        <div onPointerDown={beginTimerDrag} onPointerMove={moveTimer} onPointerUp={() => { dragStart.current = null; }} className="mb-3 flex cursor-grab touch-none items-center justify-between text-xs text-[#86a18f] active:cursor-grabbing"><span className="flex items-center gap-1.5 uppercase tracking-[0.15em]"><GripVertical size={15} /> Drag timer</span><span className="text-[#ff7474]">POMODORO</span></div>
-        <div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(#35ff93 ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#07120b]"><span className="font-mono text-4xl font-medium tracking-[-0.08em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#86a18f]">deep work</span></div></div></div>
-        <div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => setIsRunning((running) => !running)} className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#35ff93] px-3 py-2.5 text-sm font-bold text-black hover:bg-[#85ffb5]">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => { setRemainingSeconds(WORK_MINUTES * 60); setIsRunning(false); }} className="rounded-xl border border-white/10 px-3 py-2.5 text-[#d9e8dd] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff4949]/10 text-xs font-medium text-[#ff8585]">25 min</span></div>
-      </section>
-      {error && <p role="alert" className="fixed bottom-5 left-5 z-30 max-w-sm rounded-xl border border-[#ff4949]/30 bg-[#2a0808]/90 px-4 py-3 text-sm text-[#ffaaaa]">{error}</p>}
+      <DraggableWidget label="focus steps" anchorClassName="bottom-5 left-5 w-[min(22rem,calc(100vw-2.5rem))] sm:bottom-8 sm:left-8">
+        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#090b0a]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-white">Session breakdown</h2><Target size={16} className="text-[#ff7676]" /></div><div className="max-h-48 space-y-1 overflow-y-auto pr-1">{subtasks.length === 0 && <p className="rounded-xl border border-dashed border-white/10 px-3 py-4 text-sm text-[#9bad9f]">Break the task into one small next action.</p>}{subtasks.map((subtask) => <button key={subtask.id} onClick={() => toggleSubtask(subtask)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-white/[0.06]"><span className={`grid size-5 shrink-0 place-items-center rounded-md border ${subtask.is_completed ? "border-[#46ff96] bg-[#46ff96] text-black" : "border-white/25"}`}>{subtask.is_completed && <Check size={13} strokeWidth={3} />}</span><span className={`text-sm ${subtask.is_completed ? "text-[#7e8c82] line-through" : "text-[#effaf1]"}`}>{subtask.title}</span></button>)}</div><form onSubmit={addSubtask} className="mt-3 flex gap-2 border-t border-white/10 pt-3"><label className="sr-only" htmlFor="subtask-title">Add a focus step</label><input id="subtask-title" value={newSubtask} onChange={(event) => setNewSubtask(event.target.value)} maxLength={200} placeholder="Add a focus step" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#6e7e73] focus:border-[#46ff96]" /><button disabled={isSavingSubtask} className="grid size-10 place-items-center rounded-xl bg-[#46ff96] text-black hover:bg-[#8dffbd] disabled:opacity-60" aria-label="Add focus step"><Plus size={18} /></button></form></div>
+      </DraggableWidget>
+      {error && <p role="alert" className="fixed bottom-5 left-1/2 z-40 max-w-sm -translate-x-1/2 rounded-xl border border-[#ff5151]/30 bg-[#310808]/95 px-4 py-3 text-sm text-[#ffb0b0]">{error}</p>}
     </main>
   );
 }
