@@ -212,7 +212,10 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
 
   async function toggleSubtask(subtask: Subtask, event: ReactMouseEvent<HTMLButtonElement>) {
     setError(null);
-    try { const updated = await updateSubtaskCompletion(subtask.id, !subtask.is_completed); setSubtasks((items) => items.map((item) => item.id === updated.id ? updated : item)); if (updated.is_completed && !subtask.is_completed) { const checkmark = event.currentTarget.querySelector<HTMLElement>("[data-subtask-check]"); const rect = (checkmark ?? event.currentTarget).getBoundingClientRect(); setSubtaskCelebrationOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }); setSubtaskCelebration((signal) => signal + 1); } }
+    const checkmark = event.currentTarget.querySelector<HTMLElement>("[data-subtask-check]");
+    const rect = (checkmark ?? event.currentTarget).getBoundingClientRect();
+    const celebrationOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    try { const updated = await updateSubtaskCompletion(subtask.id, !subtask.is_completed); setSubtasks((items) => items.map((item) => item.id === updated.id ? updated : item)); if (updated.is_completed && !subtask.is_completed) { setSubtaskCelebrationOrigin(celebrationOrigin); setSubtaskCelebration((signal) => signal + 1); } }
     catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not update that subtask."); }
   }
 
