@@ -2,7 +2,7 @@ from datetime import date, time
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TaskPriority(str, Enum):
@@ -46,6 +46,8 @@ class TaskCompletionUpdate(BaseModel):
 
 class TaskResponse(TaskBase):
     """The task shape returned to API clients."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     is_completed: bool

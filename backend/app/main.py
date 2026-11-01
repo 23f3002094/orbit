@@ -1,10 +1,13 @@
-from datetime import date, time
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
 
-from app.schemas.task import TaskCompletionUpdate, TaskCreate, TaskPriority, TaskResponse
+from app.db.session import get_db
+from app.models.task import Task
+from app.schemas.task import TaskCompletionUpdate, TaskCreate, TaskResponse
 
 
 app = FastAPI(
@@ -22,50 +25,18 @@ app.add_middleware(
 )
 
 
-# Temporary application data. PostgreSQL will replace this in MVP step 6.
-TASKS: list[TaskResponse] = [
-    TaskResponse(
-        id=UUID("7d3cfa2f-1fb1-475d-a9c4-3dbf8e68e459"),
-        title="Review project proposal",
-        scheduled_date=date.today(),
-        start_time=time(9, 0),
-        end_time=time(10, 0),
-        priority=TaskPriority.MUST_DO,
-        category="Work",
-        estimated_minutes=60,
-        is_completed=False,
-    ),
-    TaskResponse(
-        id=UUID("a7e4c6ed-6e11-4a85-a7d6-2f40ddd978aa"),
-        title="Read two chapters",
-        scheduled_date=date.today(),
-        priority=TaskPriority.SHOULD_DO,
-        category="Study",
-        estimated_minutes=45,
-        is_completed=False,
-    ),
-    TaskResponse(
-        id=UUID("cc0765d6-378e-4873-9d80-2e4dc8c0f93b"),
-        title="Plan next week",
-        scheduled_date=date.today(),
-        priority=TaskPriority.COULD_DO,
-        category="Personal",
-        estimated_minutes=30,
-        is_completed=True,
-    ),
-]
-
-
 @app.get("/health", tags=["system"])
-async def health_check() -> dict[str, str]:
-    """Report whether the API process is available."""
+def health_check(db: Session = Depends(get_db)) -> dict[str, str]:
+    """Report whether the API process and its database are available."""
+    db.execute(text("SELECT 1"))
     return {"status": "ok"}
 
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
-async def list_tasks() -> list[TaskResponse]:
-    """Return the temporary task collection."""
-    return TASKS
+def list_tasks(db: Session = Depends(get_db)) -> list[TaskResponse]:
+    """Return tasks from PostgreSQL in calendar order."""
+    statement = select(Task).order_by(Task.scheduled_date, Task.start_time, Task.created_at)
+    return list(db.scalars(statement))
 
 
 @app.post(
@@ -74,27 +45,27 @@ async def list_tasks() -> list[TaskResponse]:
     status_code=status.HTTP_201_CREATED,
     tags=["tasks"],
 )
-async def create_task(task: TaskCreate) -> TaskResponse:
-    """Create a task in temporary memory."""
-    created_task = TaskResponse(
-        id=uuid4(),
-        is_completed=False,
-        **task.model_dump(),
-    )
-    TASKS.append(created_task)
+def create_task(task: TaskCreate, db: Session = Depends(get_db)) -> TaskResponse:
+    """Create and persist a task in PostgreSQL."""
+    created_task = Task(**task.model_dump())
+    db.add(created_task)
+    db.commit()
+    db.refresh(created_task)
     return created_task
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
-async def update_task_completion(
+def update_task_completion(
     task_id: UUID,
     task_update: TaskCompletionUpdate,
+    db: Session = Depends(get_db),
 ) -> TaskResponse:
-    """Update a task's completion state in temporary memory."""
-    for index, task in enumerate(TASKS):
-        if task.id == task_id:
-            updated_task = task.model_copy(update=task_update.model_dump())
-            TASKS[index] = updated_task
-            return updated_task
+    """Update a task's completion state in PostgreSQL."""
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    task.is_completed = task_update.is_completed
+    db.commit()
+    db.refresh(task)
+    return task
