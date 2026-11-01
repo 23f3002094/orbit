@@ -45,6 +45,20 @@ class TaskCompletionUpdate(BaseModel):
     is_completed: bool
 
 
+class TaskUpdate(BaseModel):
+    """Any changed task fields. Existing values fill fields not sent by the client."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    scheduled_date: date | None = None
+    start_time: time | None = None
+    end_time: time | None = None
+    priority: TaskPriority | None = None
+    category: str | None = Field(default=None, min_length=1, max_length=50)
+    color: str | None = Field(default=None, pattern=r"^#[0-9A-Fa-f]{6}$")
+    estimated_minutes: int | None = Field(default=None, gt=0)
+    is_completed: bool | None = None
+
+
 class TaskResponse(TaskBase):
     """The task shape returned to API clients."""
 

@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models.focus_session import FocusSession
 from app.models.subtask import Subtask
 from app.models.task import Task
-from app.schemas.task import TaskCompletionUpdate, TaskCreate, TaskResponse
+from app.schemas.task import TaskBase, TaskCreate, TaskResponse, TaskUpdate
 from app.schemas.subtask import SubtaskCompletionUpdate, SubtaskCreate, SubtaskResponse
 from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse
 
@@ -62,7 +62,7 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)) -> TaskResponse
 @app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def update_task_completion(
     task_id: UUID,
-    task_update: TaskCompletionUpdate,
+    task_update: TaskUpdate,
     db: Session = Depends(get_db),
 ) -> TaskResponse:
     """Update a task's completion state in PostgreSQL."""
@@ -70,10 +70,34 @@ def update_task_completion(
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    task.is_completed = task_update.is_completed
+    updates = task_update.model_dump(exclude_unset=True)
+    proposed_task = TaskBase.model_validate({
+        "title": updates.get("title", task.title),
+        "scheduled_date": updates.get("scheduled_date", task.scheduled_date),
+        "start_time": updates.get("start_time", task.start_time),
+        "end_time": updates.get("end_time", task.end_time),
+        "priority": updates.get("priority", task.priority),
+        "category": updates.get("category", task.category),
+        "color": updates.get("color", task.color),
+        "estimated_minutes": updates.get("estimated_minutes", task.estimated_minutes),
+    })
+    for field, value in updates.items():
+        setattr(task, field, value)
+    # Model validation above ensures merged start/end times remain valid.
+    _ = proposed_task
     db.commit()
     db.refresh(task)
     return task
+
+
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
+def delete_task(task_id: UUID, db: Session = Depends(get_db)) -> None:
+    """Permanently delete one task and its related focus data."""
+    task = db.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    db.delete(task)
+    db.commit()
 
 
 @app.get("/tasks/{task_id}/subtasks", response_model=list[SubtaskResponse], tags=["subtasks"])

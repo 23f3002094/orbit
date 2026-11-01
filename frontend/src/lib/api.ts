@@ -25,15 +25,24 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
   return response.json() as Promise<Task>;
 }
 
-export async function updateTaskCompletion(taskId: string, isCompleted: boolean): Promise<Task> {
+export async function updateTask(taskId: string, updates: Partial<Task>): Promise<Task> {
   const response = await fetch(`${API_URL}/tasks/${taskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ is_completed: isCompleted }),
+    body: JSON.stringify(updates),
   });
 
   if (!response.ok) throw new Error("Orbit could not update that task.");
   return response.json() as Promise<Task>;
+}
+
+export async function updateTaskCompletion(taskId: string, isCompleted: boolean): Promise<Task> {
+  return updateTask(taskId, { is_completed: isCompleted });
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/tasks/${taskId}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("Orbit could not delete that task.");
 }
 
 export async function getSubtasks(taskId: string): Promise<Subtask[]> {

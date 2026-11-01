@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Coffee, Flame, Grip, ImagePlus, Palette, Pause, Play, Plus, RotateCcw, Settings2, Sparkles, Trash2, Video } from "lucide-react";
+import { ArrowLeft, Check, Coffee, Flame, Grip, ImagePlus, Palette, Pause, Pencil, Play, Plus, RotateCcw, Settings2, Sparkles, Trash2, Video } from "lucide-react";
 import { type ChangeEvent, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { createFocusSession, createSubtask, getDailyFocusSummary, getSubtasks, updateSubtaskCompletion } from "@/lib/api";
@@ -12,6 +12,7 @@ interface FocusSpaceProps {
   task: Task;
   onExit: () => void;
   onUpdateCompletion: (isCompleted: boolean) => Promise<void>;
+  onEdit: () => void;
 }
 
 interface DraggableWidgetProps {
@@ -65,7 +66,7 @@ function DraggableWidget({ anchorClassName, children, label }: DraggableWidgetPr
   );
 }
 
-export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps) {
+export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSpaceProps) {
   const [workMinutes, setWorkMinutes] = useState(25);
   const [shortBreakMinutes, setShortBreakMinutes] = useState(5);
   const [longBreakMinutes, setLongBreakMinutes] = useState(15);
@@ -191,6 +192,14 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
     setWallpaper(null);
   }
 
+  function applyYouTubePreset(url: string) {
+    const id = getYouTubeId(url);
+    if (!id) return;
+    setYoutubeUrl(url);
+    setYoutubeId(id);
+    setWallpaper(null);
+  }
+
   function updateVideoVolume(volume: number) {
     setVideoVolume(volume);
     const player = document.getElementById("orbit-youtube-player") as HTMLIFrameElement | null;
@@ -205,8 +214,8 @@ export function FocusSpace({ task, onExit, onUpdateCompletion }: FocusSpaceProps
       <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:radial-gradient(rgba(255,255,255,.75)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
 
       <header className="relative z-20 flex items-center justify-between gap-3">
-        <button onClick={onExit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-[#46ff96]"><ArrowLeft size={16} /> Return to calendar</button>
-        <div className="flex items-center gap-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><ImagePlus size={16} className="text-[#46ff96]" /> Add wallpaper<input onChange={selectWallpaper} accept="image/*" type="file" className="sr-only" /></label><details className="relative"><summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md hover:border-[#46ff96]/50"><Palette size={16} /> Vibe</summary><div className="absolute right-0 top-12 w-72 rounded-2xl border border-white/10 bg-[#080b08]/95 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#9bad9f]">Room palette</p><div className="mt-3 grid grid-cols-3 gap-2">{(["forest", "ember", "night"] as Vibe[]).map((item) => <button key={item} onClick={() => setVibe(item)} className={`rounded-xl border px-2 py-2 text-xs capitalize ${vibe === item ? "border-[#46ff96] bg-[#46ff96]/10 text-[#9cffc5]" : "border-white/10 text-[#b8c6bc]"}`}>{item}</button>)}</div><form onSubmit={applyYouTubeBackground} className="mt-4 border-t border-white/10 pt-3"><label className="text-xs font-bold text-[#d8e4db]"><Video size={14} className="mr-1 inline text-[#ff5151]" />YouTube ambience</label><input value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="Paste a YouTube link" className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none placeholder:text-[#6e7e73] focus:border-[#46ff96]" /><button className="mt-2 w-full rounded-xl bg-white/10 py-2 text-xs font-semibold text-white hover:bg-white/15">Use video background</button>{youtubeId && <label className="mt-3 block text-xs font-bold text-[#d8e4db]">Video volume <span className="float-right text-[#8dffbb]">{videoVolume}%</span><input type="range" min="0" max="100" value={videoVolume} onChange={(event) => updateVideoVolume(Number(event.target.value))} className="mt-2 w-full accent-[#46ff96]" /></label>}<p className="mt-2 text-[10px] leading-4 text-[#839087]">If sound does not start, click the video area. Embed availability depends on the video.</p></form></div></details>{(wallpaper || youtubeId) && <button onClick={() => { setWallpaper(null); setYoutubeId(null); }} className="grid size-10 place-items-center rounded-full border border-white/10 bg-black/35 text-[#ff8b8b] backdrop-blur-md hover:border-[#ff5151]" aria-label="Remove custom background"><Trash2 size={16} /></button>}</div>
+        <div className="flex items-center gap-2"><button onClick={onExit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-[#46ff96]"><ArrowLeft size={16} /> Return to calendar</button><button onClick={onEdit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><Pencil size={15} /> Edit</button></div>
+        <div className="flex items-center gap-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><ImagePlus size={16} className="text-[#46ff96]" /> Add wallpaper<input onChange={selectWallpaper} accept="image/*" type="file" className="sr-only" /></label><details className="relative"><summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md hover:border-[#46ff96]/50"><Palette size={16} /> Vibe</summary><div className="absolute right-0 top-12 w-72 rounded-2xl border border-white/10 bg-[#080b08]/95 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#9bad9f]">Room palette</p><div className="mt-3 grid grid-cols-3 gap-2">{(["forest", "ember", "night"] as Vibe[]).map((item) => <button key={item} onClick={() => setVibe(item)} className={`rounded-xl border px-2 py-2 text-xs capitalize ${vibe === item ? "border-[#46ff96] bg-[#46ff96]/10 text-[#9cffc5]" : "border-white/10 text-[#b8c6bc]"}`}>{item}</button>)}</div><form onSubmit={applyYouTubeBackground} className="mt-4 border-t border-white/10 pt-3"><label className="text-xs font-bold text-[#d8e4db]"><Video size={14} className="mr-1 inline text-[#ff5151]" />YouTube ambience</label><input value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="Paste a YouTube link" className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none placeholder:text-[#6e7e73] focus:border-[#46ff96]" /><button className="mt-2 w-full rounded-xl bg-white/10 py-2 text-xs font-semibold text-white hover:bg-white/15">Use video background</button><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={() => applyYouTubePreset("https://youtu.be/DvfSPb8VWC4?si=PloUljqrPTqRng6T")} className="rounded-lg border border-white/10 px-2 py-2 text-[10px] text-[#b8c6bc] hover:border-[#46ff96]/50">Lofi flow</button><button type="button" onClick={() => applyYouTubePreset("https://www.youtube.com/live/Q89Dzox4jAE?si=_hC9spQhp7046esh")} className="rounded-lg border border-white/10 px-2 py-2 text-[10px] text-[#b8c6bc] hover:border-[#46ff96]/50">Live ambience</button></div>{youtubeId && <label className="mt-3 block text-xs font-bold text-[#d8e4db]">Video volume <span className="float-right text-[#8dffbb]">{videoVolume}%</span><input type="range" min="0" max="100" value={videoVolume} onChange={(event) => updateVideoVolume(Number(event.target.value))} className="mt-2 w-full accent-[#46ff96]" /></label>}<p className="mt-2 text-[10px] leading-4 text-[#839087]">If sound does not start, click the video area. Embed availability depends on the video.</p></form></div></details>{(wallpaper || youtubeId) && <button onClick={() => { setWallpaper(null); setYoutubeId(null); }} className="grid size-10 place-items-center rounded-full border border-white/10 bg-black/35 text-[#ff8b8b] backdrop-blur-md hover:border-[#ff5151]" aria-label="Remove custom background"><Trash2 size={16} /></button>}</div>
       </header>
 
       <motion.section initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45 }} className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-4xl flex-col items-center justify-center py-24 text-center">
