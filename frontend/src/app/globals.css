@@ -56,6 +56,8 @@ body {
 [class*="border-[#46ff96]"] { border-color: var(--accent) !important; }
 [class*="focus:border-[#46ff96]"]:focus { border-color: var(--accent) !important; }
 [class*="accent-[#46ff96]"] { accent-color: var(--accent); }
+[class*="shadow-[#46ff96]"] { box-shadow: 0 12px 28px rgba(255, 159, 67, .24) !important; }
+[class*="hover:bg-[#96ffc1]"]:hover, [class*="hover:bg-[#8dffbd]"]:hover { background-color: #ffc078 !important; }
 
 /* The existing UI uses Tailwind's precise dark palette. These overrides map those
    shared surfaces to semantic colours so every view also has a designed light mode. */
