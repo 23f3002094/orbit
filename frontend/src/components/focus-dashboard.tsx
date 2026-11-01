@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Flame, Timer } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { getDailyFocusSummary, getFocusSessions } from "@/lib/api";
 import type { DailyFocusSummary, FocusSession } from "@/types/focus";
@@ -15,11 +15,12 @@ export function FocusDashboard() {
   const [summary, setSummary] = useState<DailyFocusSummary[]>([]);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const today = useSyncExternalStore(
-    () => () => {},
-    () => localDateString(new Date()),
-    () => null,
-  );
+  const [today, setToday] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setToday(localDateString(new Date())), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!today) return;
