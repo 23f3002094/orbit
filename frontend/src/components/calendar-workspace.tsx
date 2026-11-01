@@ -31,6 +31,7 @@ function localDateString(date: Date) {
 export function CalendarWorkspace() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [taskActionTarget, setTaskActionTarget] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -48,7 +49,7 @@ export function CalendarWorkspace() {
   const events = useMemo(() => tasks.map(taskToEvent), [tasks]);
   const completedCount = tasks.filter((task) => task.is_completed).length;
   const focusMinutes = tasks.reduce((total, task) => total + (task.estimated_minutes ?? 0), 0);
-  function openFocusSpace(clickInfo: EventClickArg) { const task = clickInfo.event.extendedProps.task as Task | undefined; if (task) setActiveTask(task); }
+  function openFocusSpace(clickInfo: EventClickArg) { const task = clickInfo.event.extendedProps.task as Task | undefined; if (task) setTaskActionTarget(task); }
   function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); setCelebration((current) => ({ kind: "task", signal: current.signal + 1 })); refreshStreak(); }
   function updateSavedTask(task: Task) { setTasks((currentTasks) => currentTasks.map((item) => item.id === task.id ? task : item)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
   function removeDeletedTask(taskId: string) { setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
@@ -116,8 +117,13 @@ export function CalendarWorkspace() {
       </div>
       {hoveredTimeSlot && <div className="pointer-events-none fixed z-10 rounded-md border border-[#ff9f43]/70 bg-[#ff9f43]/[0.07] shadow-[inset_0_0_18px_rgba(255,159,67,.10)]" style={hoveredTimeSlot} />}
       {isCreating && <TaskForm initialSchedule={initialSchedule} taskToEdit={taskToEdit} onClose={() => { setTaskToEdit(undefined); setIsCreating(false); }} onCreated={addCreatedTask} onUpdated={updateSavedTask} onDeleted={removeDeletedTask} />}
+      {taskActionTarget && <TaskActionMenu task={taskActionTarget} onClose={() => setTaskActionTarget(null)} onFocus={() => { setActiveTask(taskActionTarget); setTaskActionTarget(null); }} onEdit={() => { setTaskToEdit(taskActionTarget); setTaskActionTarget(null); setIsCreating(true); }} />}
     </main>
   );
 }
 
 function CalendarMessage({ title, detail }: { title: string; detail: string }) { return <div className="grid min-h-[600px] place-items-center text-center"><div><p className="text-lg font-medium text-white">{title}</p><p className="mt-2 max-w-sm text-sm text-[#8f9e93]">{detail}</p></div></div>; }
+
+function TaskActionMenu({ task, onClose, onFocus, onEdit }: { task: Task; onClose: () => void; onFocus: () => void; onEdit: () => void }) {
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={onClose}><section role="dialog" aria-modal="true" aria-labelledby="task-action-title" onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#0d0906] p-6 shadow-2xl shadow-black/70"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#ffbd78]">Task options</p><h2 id="task-action-title" className="mt-2 truncate text-xl font-semibold text-white">{task.title}</h2><p className="mt-2 text-sm text-[#aebdb2]">What would you like to do?</p><div className="mt-6 grid gap-3"><button onClick={onFocus} className="flex items-center justify-between rounded-2xl bg-[#ff9f43] px-4 py-4 text-left font-bold text-black transition hover:bg-[#ffc078]"><span>Enter Focus Room</span><Clock3 size={19} /></button><button onClick={onEdit} className="rounded-2xl border border-white/15 bg-white/[.04] px-4 py-4 text-left font-semibold text-white transition hover:border-[#ff9f43]/60 hover:bg-[#ff9f43]/[.07]">Edit task details</button><button onClick={onClose} className="py-2 text-sm font-medium text-[#aebdb2] hover:text-white">Cancel</button></div></section></div>;
+}
