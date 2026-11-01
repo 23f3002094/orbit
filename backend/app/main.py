@@ -12,7 +12,7 @@ from app.models.subtask import Subtask
 from app.models.task import Task
 from app.schemas.task import TaskBase, TaskCreate, TaskResponse, TaskUpdate
 from app.schemas.subtask import SubtaskCompletionUpdate, SubtaskCreate, SubtaskResponse
-from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse, TaskStreakSummary
+from app.schemas.focus import DailyFocusSummary, FocusSessionCreate, FocusSessionResponse, TaskCompletionSummary, TaskStreakSummary
 
 
 app = FastAPI(
@@ -261,4 +261,18 @@ def get_task_streak(end_date: date, db: Session = Depends(get_db)) -> TaskStreak
         current_streak=current_streak,
         longest_streak=longest_streak,
         last_completed_date=max(completed_dates, default=None),
+    )
+
+
+@app.get("/insights/task-completion", response_model=TaskCompletionSummary, tags=["insights"])
+def get_task_completion(end_date: date, db: Session = Depends(get_db)) -> TaskCompletionSummary:
+    """Return planned-task completion counts for today and the preceding seven days."""
+    week_start = end_date - timedelta(days=6)
+    week_tasks = list(db.scalars(select(Task).where(Task.scheduled_date.between(week_start, end_date))))
+    today_tasks = [task for task in week_tasks if task.scheduled_date == end_date]
+    return TaskCompletionSummary(
+        today_total=len(today_tasks),
+        today_completed=sum(task.is_completed for task in today_tasks),
+        week_total=len(week_tasks),
+        week_completed=sum(task.is_completed for task in week_tasks),
     )

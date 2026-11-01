@@ -42,3 +42,12 @@ class TaskStreakSummary(BaseModel):
     current_streak: int
     longest_streak: int
     last_completed_date: date | None
+
+
+class TaskCompletionSummary(BaseModel):
+    """Completion progress for tasks planned today and this calendar week."""
+
+    today_total: int
+    today_completed: int
+    week_total: int
+    week_completed: int

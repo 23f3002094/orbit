@@ -1,6 +1,6 @@
 import type { CreateTaskInput, Task } from "@/types/task";
 import type { Subtask } from "@/types/subtask";
-import type { DailyFocusSummary, FocusSession, TaskStreakSummary } from "@/types/focus";
+import type { DailyFocusSummary, FocusSession, TaskCompletionSummary, TaskStreakSummary } from "@/types/focus";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
@@ -104,4 +104,10 @@ export async function getTaskStreak(endDate: string): Promise<TaskStreakSummary>
   const response = await fetch(`${API_URL}/insights/task-streak?end_date=${endDate}`);
   if (!response.ok) throw new Error("Orbit could not load your task streak.");
   return response.json() as Promise<TaskStreakSummary>;
+}
+
+export async function getTaskCompletion(endDate: string): Promise<TaskCompletionSummary> {
+  const response = await fetch(`${API_URL}/insights/task-completion?end_date=${endDate}`);
+  if (!response.ok) throw new Error("Orbit could not load your task completion statistics.");
+  return response.json() as Promise<TaskCompletionSummary>;
 }

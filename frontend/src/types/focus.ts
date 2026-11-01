@@ -19,3 +19,10 @@ export interface TaskStreakSummary {
   longest_streak: number;
   last_completed_date: string | null;
 }
+
+export interface TaskCompletionSummary {
+  today_total: number;
+  today_completed: number;
+  week_total: number;
+  week_completed: number;
+}

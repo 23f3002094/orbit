@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowLeft, Flame, Timer } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Flame, Timer } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { getDailyFocusSummary, getFocusSessions } from "@/lib/api";
-import type { DailyFocusSummary, FocusSession } from "@/types/focus";
+import { getDailyFocusSummary, getFocusSessions, getTaskCompletion } from "@/lib/api";
+import type { DailyFocusSummary, FocusSession, TaskCompletionSummary } from "@/types/focus";
 
 function localDateString(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -14,6 +14,7 @@ function localDateString(date: Date): string {
 export function FocusDashboard() {
   const [summary, setSummary] = useState<DailyFocusSummary[]>([]);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [taskCompletion, setTaskCompletion] = useState<TaskCompletionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
@@ -26,8 +27,12 @@ export function FocusDashboard() {
     if (!today) return;
     const start = new Date();
     start.setDate(start.getDate() - 6);
-    Promise.all([getDailyFocusSummary(today, 7), getFocusSessions(localDateString(start), today)])
-      .then(([daily, intervals]) => { setSummary(daily); setSessions(intervals); })
+    Promise.all([getDailyFocusSummary(today, 7), getFocusSessions(localDateString(start), today), getTaskCompletion(today)])
+      .then(([daily, intervals, completion]) => {
+        setSummary(daily);
+        setSessions(intervals);
+        setTaskCompletion(completion);
+      })
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load focus insights."));
   }, [today]);
 
@@ -41,10 +46,13 @@ export function FocusDashboard() {
       return { key, label: date.toLocaleDateString(undefined, { weekday: "narrow" }), ...(byDate.get(key) ?? { focused_minutes: 0, completed_pomodoros: 0 }) };
     });
   }, [summary, today]);
+
   const focusedMinutes = week.reduce((total, day) => total + day.focused_minutes, 0);
   const completedPomodoros = week.reduce((total, day) => total + day.completed_pomodoros, 0);
   const todaySummary = week.at(-1);
   const peak = Math.max(...week.map((day) => day.focused_minutes), 1);
+  const todayRate = taskCompletion?.today_total ? Math.round((taskCompletion.today_completed / taskCompletion.today_total) * 100) : 0;
+  const weekRate = taskCompletion?.week_total ? Math.round((taskCompletion.week_completed / taskCompletion.week_total) * 100) : 0;
 
   function hourHasFocus(day: string, hour: number): boolean {
     return sessions.some((session) => {
@@ -57,9 +65,30 @@ export function FocusDashboard() {
     });
   }
 
-  return <main className="min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8"><div className="mx-auto max-w-5xl"><Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm text-[#c5d2c9] hover:border-[#46ff96]/50"><ArrowLeft size={16} /> Calendar</Link><header className="mt-10"><p className="text-xs font-bold uppercase tracking-[.18em] text-[#8dffbb]">Focus insights</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-white">Your attention, visible.</h1><p className="mt-3 max-w-xl leading-7 text-[#94a399]">Every focused minute from the Focus Room becomes part of your daily history.</p></header>{!today ? <p className="mt-10 text-[#8e9d93]">Loading your local focus timeline...</p> : error ? <p className="mt-10 rounded-2xl border border-[#ff5151]/30 bg-[#ff5151]/10 p-4 text-[#ffaaaa]">{error}</p> : <><section className="mt-8 grid gap-4 sm:grid-cols-3"><Metric icon={<Timer size={19} />} label="Focused today" value={`${todaySummary?.focused_minutes ?? 0} min`} /><Metric icon={<Flame size={19} />} label="Pomodoros today" value={String(todaySummary?.completed_pomodoros ?? 0)} /><Metric icon={<Flame size={19} />} label="Focused this week" value={`${focusedMinutes} min`} /></section><section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-white">Seven-day rhythm</h2><p className="mt-1 text-sm text-[#8e9d93]">{completedPomodoros} completed Pomodoros this week</p></div><span className="rounded-full bg-[#46ff96]/10 px-3 py-1 text-xs font-bold text-[#8dffbb]">minutes</span></div><div className="mt-10 flex h-52 items-end justify-between gap-3">{week.map((day) => <div key={day.key} className="flex h-full flex-1 flex-col items-center justify-end gap-3"><span className="text-xs text-[#b9c8be]">{day.focused_minutes || ""}</span><div className="w-full max-w-12 rounded-t-xl bg-gradient-to-t from-[#237a49] to-[#46ff96] transition-all" style={{ height: `${Math.max(day.focused_minutes ? (day.focused_minutes / peak) * 100 : 3, 3)}%` }} /><span className="text-xs font-bold text-[#819087]">{day.label}</span></div>)}</div></section><section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-white">24-hour focus map</h2><p className="mt-1 text-sm text-[#8e9d93]">Each green block is an hour touched by any recorded focus time.</p></div><span className="text-xs text-[#819087]">00:00 - 24:00</span></div><div className="mt-6 overflow-x-auto"><div className="min-w-[720px]"><div className="ml-16 grid text-[10px] text-[#6f7e74]" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>{Array.from({ length: 24 }, (_, hour) => <span key={hour}>{hour % 3 === 0 ? String(hour).padStart(2, "0") : ""}</span>)}</div><div className="mt-2 space-y-2">{week.map((day) => <div key={day.key} className="grid grid-cols-[3.5rem_1fr] items-center gap-2"><span className="text-xs font-bold text-[#9ba99f]">{day.label} <span className="font-normal text-[#627066]">{day.key.slice(8)}</span></span><div className="grid h-7 gap-px rounded-md overflow-hidden" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>{Array.from({ length: 24 }, (_, hour) => <span key={hour} title={`${day.key} ${String(hour).padStart(2, "0")}:00`} className={hourHasFocus(day.key, hour) ? "bg-[#46ff96] shadow-[inset_0_0_10px_rgba(255,255,255,.35)]" : "bg-white/[.06]"} />)}</div></div>)}</div></div></div></section></>}</div></main>;
+  return (
+    <main className="min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8">
+      <div className="mx-auto max-w-5xl">
+        <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-4 py-2 text-sm text-[#c5d2c9] hover:border-[#46ff96]/50"><ArrowLeft size={16} /> Calendar</Link>
+        <header className="mt-10"><p className="text-xs font-bold uppercase tracking-[.18em] text-[#8dffbb]">Focus insights</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-white">Your attention, visible.</h1><p className="mt-3 max-w-xl leading-7 text-[#94a399]">Every focused minute and kept promise becomes part of your daily history.</p></header>
+        {!today ? <p className="mt-10 text-[#8e9d93]">Loading your local focus timeline...</p> : error ? <p className="mt-10 rounded-2xl border border-[#ff5151]/30 bg-[#ff5151]/10 p-4 text-[#ffaaaa]">{error}</p> : <>
+          <section className="mt-8 grid gap-4 sm:grid-cols-3"><Metric icon={<Timer size={19} />} label="Focused today" value={`${todaySummary?.focused_minutes ?? 0} min`} /><Metric icon={<Flame size={19} />} label="Pomodoros today" value={String(todaySummary?.completed_pomodoros ?? 0)} /><Metric icon={<Timer size={19} />} label="Focused this week" value={`${focusedMinutes} min`} /></section>
+          <section className="mt-5 grid gap-4 md:grid-cols-3">
+            <TaskMetric label="Promises kept today" completed={taskCompletion?.today_completed ?? 0} total={taskCompletion?.today_total ?? 0} rate={todayRate} />
+            <TaskMetric label="Promises kept this week" completed={taskCompletion?.week_completed ?? 0} total={taskCompletion?.week_total ?? 0} rate={weekRate} />
+            <div className="rounded-3xl border border-white/10 bg-[#080b08] p-5"><div className="flex items-center gap-2 text-[#46ff96]"><Flame size={19} /><span className="text-xs font-bold uppercase tracking-[.15em] text-[#8e9d93]">Weekly rhythm</span></div><p className="mt-4 text-3xl font-semibold text-white">{completedPomodoros}</p><p className="mt-1 text-sm text-[#8e9d93]">completed Pomodoros</p></div>
+          </section>
+          <section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-white">Seven-day rhythm</h2><p className="mt-1 text-sm text-[#8e9d93]">Your focused minutes across the last seven days.</p></div><span className="rounded-full bg-[#46ff96]/10 px-3 py-1 text-xs font-bold text-[#8dffbb]">minutes</span></div><div className="mt-10 flex h-52 items-end justify-between gap-3">{week.map((day) => <div key={day.key} className="flex h-full flex-1 flex-col items-center justify-end gap-3"><span className="text-xs text-[#b9c8be]">{day.focused_minutes || ""}</span><div className="w-full max-w-12 rounded-t-xl bg-gradient-to-t from-[#237a49] to-[#46ff96] transition-all" style={{ height: `${Math.max(day.focused_minutes ? (day.focused_minutes / peak) * 100 : 3, 3)}%` }} /><span className="text-xs font-bold text-[#819087]">{day.label}</span></div>)}</div></section>
+          <section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-white">24-hour focus map</h2><p className="mt-1 text-sm text-[#8e9d93]">Each green block is an hour touched by any recorded focus time.</p></div><span className="text-xs text-[#819087]">00:00 - 24:00</span></div><div className="mt-6 overflow-x-auto"><div className="min-w-[720px]"><div className="ml-16 grid text-[10px] text-[#6f7e74]" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>{Array.from({ length: 24 }, (_, hour) => <span key={hour}>{hour % 3 === 0 ? String(hour).padStart(2, "0") : ""}</span>)}</div><div className="mt-2 space-y-2">{week.map((day) => <div key={day.key} className="grid grid-cols-[3.5rem_1fr] items-center gap-2"><span className="text-xs font-bold text-[#9ba99f]">{day.label} <span className="font-normal text-[#627066]">{day.key.slice(8)}</span></span><div className="grid h-7 gap-px overflow-hidden rounded-md" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>{Array.from({ length: 24 }, (_, hour) => <span key={hour} title={`${day.key} ${String(hour).padStart(2, "0")}:00`} className={hourHasFocus(day.key, hour) ? "bg-[#46ff96] shadow-[inset_0_0_10px_rgba(255,255,255,.35)]" : "bg-white/[.06]"} />)}</div></div>)}</div></div></div></section>
+        </>}
+      </div>
+    </main>
+  );
 }
 
 function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return <div className="rounded-3xl border border-white/10 bg-[#080b08] p-5"><div className="flex items-center gap-2 text-[#46ff96]">{icon}<span className="text-xs font-bold uppercase tracking-[.15em] text-[#8e9d93]">{label}</span></div><p className="mt-4 text-3xl font-semibold text-white">{value}</p></div>;
+}
+
+function TaskMetric({ label, completed, total, rate }: { label: string; completed: number; total: number; rate: number }) {
+  return <div className="rounded-3xl border border-white/10 bg-[#080b08] p-5"><div className="flex items-center gap-2 text-[#46ff96]"><CheckCircle2 size={19} /><span className="text-xs font-bold uppercase tracking-[.15em] text-[#8e9d93]">{label}</span></div><div className="mt-4 flex items-end justify-between"><p className="text-3xl font-semibold text-white">{completed}<span className="text-lg text-[#819087]"> / {total}</span></p><span className="text-sm font-bold text-[#8dffbb]">{rate}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#46ff96] transition-all" style={{ width: `${rate}%` }} /></div></div>;
 }
