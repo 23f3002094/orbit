@@ -27,7 +27,11 @@ body {
 .fc .fc-col-header-cell-cushion { color: #829087; font-size: .67rem; font-weight: 700; padding: .85rem .2rem; text-transform: uppercase; letter-spacing: .1em; }
 .fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { color: #637067; font-size: .7rem; }
 .fc .fc-event { border-radius: .5rem; box-shadow: none; cursor: pointer; font-size: .75rem; font-weight: 650; padding: .18rem .3rem; }
-.fc .fc-event:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.fc .fc-event:hover {
+  filter: brightness(1.06) saturate(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.34), 0 8px 18px rgba(0,0,0,.24);
+}
 .fc .orbit-event-complete { opacity: .52; text-decoration: line-through; }
 .fc .fc-daygrid-day-number { color: #b8c6bc; font-size: .82rem; padding: .55rem; }
 .fc .fc-timegrid-slot-lane,

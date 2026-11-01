@@ -67,6 +67,7 @@ export function CalendarWorkspace() {
   }
   function trackTimeSlot(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
+    if (target.closest(".fc-event")) { setHoveredTimeSlot(null); return; }
     const timeGrid = target.closest(".fc-timegrid");
     if (!timeGrid) { setHoveredTimeSlot(null); return; }
     const elementsAtPointer = document.elementsFromPoint(event.clientX, event.clientY);
