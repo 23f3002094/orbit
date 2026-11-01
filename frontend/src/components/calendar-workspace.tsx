@@ -15,7 +15,7 @@ import { getTaskStreak, getTasks, updateTask, updateTaskCompletion } from "@/lib
 import type { Task } from "@/types/task";
 import type { TaskStreakSummary } from "@/types/focus";
 
-const priorityColors = { must_do: "#ff5151", should_do: "#46ff96", could_do: "#a3ccae" } as const;
+const priorityColors = { must_do: "#ff5151", should_do: "#ff9f43", could_do: "#a3ccae" } as const;
 interface HoveredTimeSlot { left: number; top: number; width: number; height: number; }
 
 function taskToEvent(task: Task): EventInput {
@@ -111,7 +111,7 @@ export function CalendarWorkspace() {
           <aside className="rounded-[1.75rem] border border-white/[0.08] bg-[#080b08] p-5"><div className="flex items-center gap-2 text-sm font-semibold text-white"><Clock3 size={17} className="text-[#46ff96]" /> Workload pulse</div><p className="mt-2 text-sm leading-6 text-[#8f9e93]">A calm view of what is asking for your energy.</p><div className="mt-6 space-y-3">{(["must_do", "should_do", "could_do"] as const).map((priority) => <div key={priority} className="rounded-2xl border border-white/[0.07] bg-black/25 p-3"><div className="mb-3 flex items-center justify-between text-sm capitalize text-[#cbd8ce]"><span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: priorityColors[priority] }} />{priority.replace("_", " ")}</span><ChevronRight size={15} className="text-[#607065]" /></div><p className="text-2xl font-semibold text-white">{tasks.filter((task) => task.priority === priority).length}</p></div>)}</div><div className="mt-6 rounded-2xl bg-[#46ff96]/10 p-4"><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8dffbb]">Focus hint</p><p className="mt-2 text-sm leading-6 text-[#d9e8dc]">Click an empty slot to plan there. Click a task when you are ready to focus.</p></div></aside>
         </section>
       </div>
-      {hoveredTimeSlot && <div className="pointer-events-none fixed z-10 rounded-md border border-[#46ff96]/70 bg-[#46ff96]/[0.07] shadow-[inset_0_0_18px_rgba(70,255,150,.10)]" style={hoveredTimeSlot} />}
+      {hoveredTimeSlot && <div className="pointer-events-none fixed z-10 rounded-md border border-[#ff9f43]/70 bg-[#ff9f43]/[0.07] shadow-[inset_0_0_18px_rgba(255,159,67,.10)]" style={hoveredTimeSlot} />}
       {isCreating && <TaskForm initialSchedule={initialSchedule} taskToEdit={taskToEdit} onClose={() => { setTaskToEdit(undefined); setIsCreating(false); }} onCreated={addCreatedTask} onUpdated={updateSavedTask} onDeleted={removeDeletedTask} />}
     </main>
   );
