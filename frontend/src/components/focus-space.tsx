@@ -85,6 +85,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [videoVolume, setVideoVolume] = useState(45);
   const [error, setError] = useState<string | null>(null);
+  const unloggedWorkSeconds = useRef(0);
   const prefersReducedMotion = useReducedMotion();
   const todayKey = new Date().toLocaleDateString("en-CA");
 
@@ -95,6 +96,12 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
     setIsRunning(false);
   }, [longBreakMinutes, shortBreakMinutes, timerMode, workMinutes]);
 
+  const recordWorkSeconds = useCallback(async (seconds: number, isFullPomodoro: boolean) => {
+    if (seconds < 1) return;
+    await createFocusSession({ task_id: task.id, focused_on: todayKey, duration_seconds: seconds, is_full_pomodoro: isFullPomodoro });
+    setFocusedToday((minutes) => minutes + seconds / 60);
+  }, [task.id, todayKey]);
+
   const finishTimerPhase = useCallback(async () => {
     setIsRunning(false);
     if (timerMode !== "work") {
@@ -102,16 +109,17 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
       return;
     }
     try {
-      await createFocusSession({ task_id: task.id, focused_on: todayKey, duration_minutes: workMinutes });
+      const seconds = unloggedWorkSeconds.current || workMinutes * 60;
+      unloggedWorkSeconds.current = 0;
+      await recordWorkSeconds(seconds, true);
       const nextPomodoroCount = completedPomodoros + 1;
       setCompletedPomodoros(nextPomodoroCount);
-      setFocusedToday((minutes) => minutes + workMinutes);
       resetTimer(nextPomodoroCount % 4 === 0 ? "long_break" : "short_break");
     } catch (requestError: unknown) {
       setError(requestError instanceof Error ? requestError.message : "Orbit could not save this focus session.");
       resetTimer("work");
     }
-  }, [completedPomodoros, resetTimer, task.id, timerMode, todayKey, workMinutes]);
+  }, [completedPomodoros, recordWorkSeconds, resetTimer, timerMode, workMinutes]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -132,12 +140,13 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
     const timer = window.setInterval(() => {
       setRemainingSeconds((current) => {
         const next = Math.max(0, current - 1);
+        if (timerMode === "work") unloggedWorkSeconds.current += 1;
         if (next === 0) window.setTimeout(() => { void finishTimerPhase(); }, 0);
         return next;
       });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [finishTimerPhase, isRunning, remainingSeconds]);
+  }, [finishTimerPhase, isRunning, remainingSeconds, timerMode]);
 
   const currentDuration = timerMode === "work" ? workMinutes : timerMode === "short_break" ? shortBreakMinutes : longBreakMinutes;
   const progress = ((currentDuration * 60 - remainingSeconds) / (currentDuration * 60)) * 100;
@@ -156,6 +165,35 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
     try { await onUpdateCompletion(!task.is_completed); }
     catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not update that task."); }
     finally { setIsSavingCompletion(false); }
+  }
+
+  async function toggleTimer() {
+    if (isRunning) {
+      setIsRunning(false);
+      if (timerMode === "work") {
+        const seconds = unloggedWorkSeconds.current;
+        unloggedWorkSeconds.current = 0;
+        try { await recordWorkSeconds(seconds, false); }
+        catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not save this focus time."); }
+      }
+      return;
+    }
+    setIsRunning(true);
+  }
+
+  async function resetCurrentTimer() {
+    if (timerMode === "work") {
+      const seconds = unloggedWorkSeconds.current;
+      unloggedWorkSeconds.current = 0;
+      try { await recordWorkSeconds(seconds, false); }
+      catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not save this focus time."); }
+    }
+    resetTimer(timerMode);
+  }
+
+  async function exitFocusRoom() {
+    await resetCurrentTimer();
+    onExit();
   }
 
   async function addSubtask(event: FormEvent<HTMLFormElement>) {
@@ -214,7 +252,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
       <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:radial-gradient(rgba(255,255,255,.75)_0.55px,transparent_0.55px)] [background-size:5px_5px]" />
 
       <header className="relative z-20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><button onClick={onExit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-[#46ff96]"><ArrowLeft size={16} /> Return to calendar</button><button onClick={onEdit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><Pencil size={15} /> Edit</button></div>
+        <div className="flex items-center gap-2"><button onClick={() => { void exitFocusRoom(); }} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-[#46ff96]"><ArrowLeft size={16} /> Return to calendar</button><button onClick={onEdit} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><Pencil size={15} /> Edit</button></div>
         <div className="flex items-center gap-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md transition hover:border-[#46ff96]/50 hover:text-white"><ImagePlus size={16} className="text-[#46ff96]" /> Add wallpaper<input onChange={selectWallpaper} accept="image/*" type="file" className="sr-only" /></label><details className="relative"><summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2.5 text-sm text-[#d5e3d9] backdrop-blur-md hover:border-[#46ff96]/50"><Palette size={16} /> Vibe</summary><div className="absolute right-0 top-12 w-72 rounded-2xl border border-white/10 bg-[#080b08]/95 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#9bad9f]">Room palette</p><div className="mt-3 grid grid-cols-3 gap-2">{(["forest", "ember", "night"] as Vibe[]).map((item) => <button key={item} onClick={() => setVibe(item)} className={`rounded-xl border px-2 py-2 text-xs capitalize ${vibe === item ? "border-[#46ff96] bg-[#46ff96]/10 text-[#9cffc5]" : "border-white/10 text-[#b8c6bc]"}`}>{item}</button>)}</div><form onSubmit={applyYouTubeBackground} className="mt-4 border-t border-white/10 pt-3"><label className="text-xs font-bold text-[#d8e4db]"><Video size={14} className="mr-1 inline text-[#ff5151]" />YouTube ambience</label><input value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="Paste a YouTube link" className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none placeholder:text-[#6e7e73] focus:border-[#46ff96]" /><button className="mt-2 w-full rounded-xl bg-white/10 py-2 text-xs font-semibold text-white hover:bg-white/15">Use video background</button><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={() => applyYouTubePreset("https://youtu.be/DvfSPb8VWC4?si=PloUljqrPTqRng6T")} className="rounded-lg border border-white/10 px-2 py-2 text-[10px] text-[#b8c6bc] hover:border-[#46ff96]/50">Lofi flow</button><button type="button" onClick={() => applyYouTubePreset("https://www.youtube.com/live/Q89Dzox4jAE?si=_hC9spQhp7046esh")} className="rounded-lg border border-white/10 px-2 py-2 text-[10px] text-[#b8c6bc] hover:border-[#46ff96]/50">Live ambience</button></div>{youtubeId && <label className="mt-3 block text-xs font-bold text-[#d8e4db]">Video volume <span className="float-right text-[#8dffbb]">{videoVolume}%</span><input type="range" min="0" max="100" value={videoVolume} onChange={(event) => updateVideoVolume(Number(event.target.value))} className="mt-2 w-full accent-[#46ff96]" /></label>}<p className="mt-2 text-[10px] leading-4 text-[#839087]">If sound does not start, click the video area. Embed availability depends on the video.</p></form></div></details>{(wallpaper || youtubeId) && <button onClick={() => { setWallpaper(null); setYoutubeId(null); }} className="grid size-10 place-items-center rounded-full border border-white/10 bg-black/35 text-[#ff8b8b] backdrop-blur-md hover:border-[#ff5151]" aria-label="Remove custom background"><Trash2 size={16} /></button>}</div>
       </header>
 
@@ -223,13 +261,13 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#ff8b8b]">{task.category} / {task.priority.replace("_", " ")}</p>
         <h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white drop-shadow-2xl sm:text-7xl">{task.title}</h1>
         <p className="mt-7 max-w-xl text-lg leading-8 text-[#d1ded4]">One task. One room. One honest promise to yourself.</p>
-        <div className="mt-10 flex flex-wrap justify-center gap-3"><button onClick={() => setIsRunning((running) => !running)} style={{ backgroundColor: accent, boxShadow: `0 18px 36px ${withAlpha(accent, "33")}` }} className="inline-flex items-center gap-2 rounded-2xl px-5 py-3.5 font-bold text-black transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2" >{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause the moment" : "Begin focus"}</button><button onClick={toggleTaskCompletion} disabled={isSavingCompletion} style={task.is_completed ? { borderColor: accent, backgroundColor: withAlpha(accent, "26"), color: accent } : undefined} className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3.5 font-bold transition disabled:opacity-60 ${task.is_completed ? "" : "border-white/15 bg-black/25 text-white hover:border-white/45"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Promise kept" : "Mark promise kept"}</button></div>
-        <div className="mt-8 flex flex-wrap justify-center gap-2"><div className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold" style={{ color: accent }}>{completedSubtasks}</span> / {subtasks.length} focus steps completed</div><div className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold text-[#46ff96]">{focusedToday}</span> focused minutes today</div></div>
+        <div className="mt-10 flex flex-wrap justify-center gap-3"><button onClick={() => { void toggleTimer(); }} style={{ backgroundColor: accent, boxShadow: `0 18px 36px ${withAlpha(accent, "33")}` }} className="inline-flex items-center gap-2 rounded-2xl px-5 py-3.5 font-bold text-black transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2" >{isRunning ? <Pause size={18} /> : <Play size={18} />}{isRunning ? "Pause the moment" : "Begin focus"}</button><button onClick={toggleTaskCompletion} disabled={isSavingCompletion} style={task.is_completed ? { borderColor: accent, backgroundColor: withAlpha(accent, "26"), color: accent } : undefined} className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3.5 font-bold transition disabled:opacity-60 ${task.is_completed ? "" : "border-white/15 bg-black/25 text-white hover:border-white/45"}`}><Check size={18} /> {isSavingCompletion ? "Saving..." : task.is_completed ? "Promise kept" : "Mark promise kept"}</button></div>
+        <div className="mt-8 flex flex-wrap justify-center gap-2"><div className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold" style={{ color: accent }}>{completedSubtasks}</span> / {subtasks.length} focus steps completed</div><div className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-sm text-[#c4d1c8] backdrop-blur"><span className="font-bold text-[#46ff96]">{Math.round(focusedToday)}</span> focused minutes today</div></div>
         <p className="mt-10 text-xs text-[#a1afa5]">Drag both widgets anywhere in the room. Your wallpaper stays active for this session.</p>
       </motion.section>
 
       <DraggableWidget label="timer" anchorClassName="right-5 top-24 w-80 sm:right-8">
-        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#071109]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="mb-3 flex items-center justify-between"><span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9bad9f]">{timerMode === "work" ? <Flame size={14} className="text-[#ff7676]" /> : <Coffee size={14} className="text-[#69a8ff]" />}{timerMode.replace("_", " ")}</span><div className="flex items-center gap-1" aria-label={`${completedPomodoros} pomodoros completed today`}>{Array.from({ length: Math.min(completedPomodoros, 6) }, (_, index) => <Flame key={index} size={13} style={{ color: accent }} fill={accent} />)}{completedPomodoros > 6 && <span className="ml-1 text-xs text-[#d8e4db]">+{completedPomodoros - 6}</span>}{completedPomodoros === 0 && <span className="text-xs text-[#6e7e73]">0 today</span>}</div></div><div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(${accent} ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#071109]"><span className="font-mono text-4xl font-semibold tracking-[-0.09em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9bad9f]">{timerMode === "work" ? "deep work" : "restore"}</span></div></div></div><div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => setIsRunning((running) => !running)} style={{ backgroundColor: accent }} className="inline-flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-bold text-black hover:brightness-110">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => resetTimer()} className="rounded-xl border border-white/10 text-[#d8e4db] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff5151]/10 text-xs font-bold text-[#ff9898]">{currentDuration}:00</span></div><div className="mt-4 border-t border-white/10 pt-3"><div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#9bad9f]"><Settings2 size={13} /> Session lengths</div><div className="grid grid-cols-3 gap-2"><label className="text-[10px] text-[#9bad9f]">Work<input min="1" max="120" type="number" value={workMinutes} onChange={(event) => setWorkMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label><label className="text-[10px] text-[#9bad9f]">Short<input min="1" max="60" type="number" value={shortBreakMinutes} onChange={(event) => setShortBreakMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label><label className="text-[10px] text-[#9bad9f]">Long<input min="1" max="90" type="number" value={longBreakMinutes} onChange={(event) => setLongBreakMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label></div><button onClick={() => resetTimer("work")} className="mt-2 w-full rounded-lg border border-white/10 py-2 text-xs font-semibold text-[#d8e4db] hover:bg-white/[0.06]">Apply and reset work timer</button></div></div>
+        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#071109]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="mb-3 flex items-center justify-between"><span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9bad9f]">{timerMode === "work" ? <Flame size={14} className="text-[#ff7676]" /> : <Coffee size={14} className="text-[#69a8ff]" />}{timerMode.replace("_", " ")}</span><div className="flex items-center gap-1" aria-label={`${completedPomodoros} pomodoros completed today`}>{Array.from({ length: Math.min(completedPomodoros, 6) }, (_, index) => <Flame key={index} size={13} style={{ color: accent }} fill={accent} />)}{completedPomodoros > 6 && <span className="ml-1 text-xs text-[#d8e4db]">+{completedPomodoros - 6}</span>}{completedPomodoros === 0 && <span className="text-xs text-[#6e7e73]">0 today</span>}</div></div><div className="grid place-items-center"><div className="grid size-40 place-items-center rounded-full p-2" style={{ background: `conic-gradient(${accent} ${progress}%, rgba(255,255,255,.10) ${progress}%)` }}><div className="grid size-full place-items-center rounded-full bg-[#071109]"><span className="font-mono text-4xl font-semibold tracking-[-0.09em] text-white">{formatRemaining(remainingSeconds)}</span><span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9bad9f]">{timerMode === "work" ? "deep work" : "restore"}</span></div></div></div><div className="mt-4 grid grid-cols-3 gap-2"><button onClick={() => { void toggleTimer(); }} style={{ backgroundColor: accent }} className="inline-flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-bold text-black hover:brightness-110">{isRunning ? <Pause size={15} /> : <Play size={15} />}{isRunning ? "Pause" : "Start"}</button><button onClick={() => { void resetCurrentTimer(); }} className="rounded-xl border border-white/10 text-[#d8e4db] hover:bg-white/[0.06]" aria-label="Reset timer"><RotateCcw size={16} className="mx-auto" /></button><span className="grid place-items-center rounded-xl bg-[#ff5151]/10 text-xs font-bold text-[#ff9898]">{currentDuration}:00</span></div><div className="mt-4 border-t border-white/10 pt-3"><div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#9bad9f]"><Settings2 size={13} /> Session lengths</div><div className="grid grid-cols-3 gap-2"><label className="text-[10px] text-[#9bad9f]">Work<input min="1" max="120" type="number" value={workMinutes} onChange={(event) => setWorkMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label><label className="text-[10px] text-[#9bad9f]">Short<input min="1" max="60" type="number" value={shortBreakMinutes} onChange={(event) => setShortBreakMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label><label className="text-[10px] text-[#9bad9f]">Long<input min="1" max="90" type="number" value={longBreakMinutes} onChange={(event) => setLongBreakMinutes(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/35 px-2 py-1.5 text-sm text-white outline-none focus:border-[#46ff96]" /></label></div><button onClick={() => { void resetCurrentTimer(); }} className="mt-2 w-full rounded-lg border border-white/10 py-2 text-xs font-semibold text-[#d8e4db] hover:bg-white/[0.06]">Apply and reset work timer</button></div></div>
       </DraggableWidget>
 
       <DraggableWidget label="focus steps" anchorClassName="bottom-5 left-5 w-[min(22rem,calc(100vw-2.5rem))] sm:bottom-8 sm:left-8">

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class FocusSessionCreate(BaseModel):
@@ -9,7 +9,15 @@ class FocusSessionCreate(BaseModel):
 
     task_id: UUID
     focused_on: date
-    duration_minutes: int = Field(gt=0, le=240)
+    duration_minutes: int | None = Field(default=None, gt=0, le=240)
+    duration_seconds: int | None = Field(default=None, gt=0, le=14_400)
+    is_full_pomodoro: bool = False
+
+    @model_validator(mode="after")
+    def require_duration(self) -> "FocusSessionCreate":
+        if self.duration_minutes is None and self.duration_seconds is None:
+            raise ValueError("duration_minutes or duration_seconds is required")
+        return self
 
 
 class FocusSessionResponse(BaseModel):
@@ -19,6 +27,8 @@ class FocusSessionResponse(BaseModel):
     task_id: UUID
     focused_on: date
     duration_minutes: int
+    duration_seconds: int
+    is_full_pomodoro: bool
     completed_at: datetime
 
 

@@ -3,6 +3,8 @@ export interface FocusSession {
   task_id: string;
   focused_on: string;
   duration_minutes: number;
+  duration_seconds: number;
+  is_full_pomodoro: boolean;
   completed_at: string;
 }
 

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select, text
+from sqlalchemy import case, func, select, text
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -165,7 +165,14 @@ def create_focus_session(
     if db.get(Task, focus_session.task_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    created_session = FocusSession(**focus_session.model_dump())
+    duration_seconds = focus_session.duration_seconds or focus_session.duration_minutes * 60
+    created_session = FocusSession(
+        task_id=focus_session.task_id,
+        focused_on=focus_session.focused_on,
+        duration_minutes=max(1, round(duration_seconds / 60)),
+        duration_seconds=duration_seconds,
+        is_full_pomodoro=focus_session.is_full_pomodoro,
+    )
     db.add(created_session)
     db.commit()
     db.refresh(created_session)
@@ -184,8 +191,8 @@ def get_daily_focus_summary(
     statement = (
         select(
             FocusSession.focused_on,
-            func.coalesce(func.sum(FocusSession.duration_minutes), 0),
-            func.count(FocusSession.id),
+            func.coalesce(func.sum(FocusSession.duration_seconds), 0),
+            func.coalesce(func.sum(case((FocusSession.is_full_pomodoro, 1), else_=0)), 0),
         )
         .where(FocusSession.focused_on.between(start_date, end_date))
         .group_by(FocusSession.focused_on)
@@ -195,7 +202,7 @@ def get_daily_focus_summary(
     return [
         DailyFocusSummary(
             focused_on=focused_on,
-            focused_minutes=focused_minutes,
+            focused_minutes=round(focused_minutes / 60),
             completed_pomodoros=completed_pomodoros,
         )
         for focused_on, focused_minutes, completed_pomodoros in rows

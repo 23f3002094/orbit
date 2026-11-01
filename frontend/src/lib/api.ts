@@ -74,7 +74,8 @@ export async function updateSubtaskCompletion(subtaskId: string, isCompleted: bo
 export async function createFocusSession(input: {
   task_id: string;
   focused_on: string;
-  duration_minutes: number;
+  duration_seconds: number;
+  is_full_pomodoro: boolean;
 }): Promise<FocusSession> {
   const response = await fetch(`${API_URL}/focus-sessions`, {
     method: "POST",
