@@ -88,6 +88,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
   const [error, setError] = useState<string | null>(null);
   const [subtaskCelebration, setSubtaskCelebration] = useState(0);
   const [subtaskCelebrationOrigin, setSubtaskCelebrationOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [taskCelebration, setTaskCelebration] = useState(0);
   const unloggedWorkSeconds = useRef(0);
   const prefersReducedMotion = useReducedMotion();
   const todayKey = new Date().toLocaleDateString("en-CA");
@@ -165,7 +166,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
   async function toggleTaskCompletion() {
     setError(null);
     setIsSavingCompletion(true);
-    try { await onUpdateCompletion(!task.is_completed); }
+    try { await onUpdateCompletion(!task.is_completed); if (!task.is_completed) setTaskCelebration((signal) => signal + 1); }
     catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not update that task."); }
     finally { setIsSavingCompletion(false); }
   }
@@ -253,6 +254,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onEdit }: FocusSp
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8">
       <CelebrationBurst kind="step" signal={subtaskCelebration} origin={subtaskCelebrationOrigin} />
+      <CelebrationBurst kind="task_done" signal={taskCelebration} />
       {youtubeId && <iframe id="orbit-youtube-player" title="YouTube focus ambience" onLoad={() => updateVideoVolume(videoVolume)} className="absolute inset-0 size-full scale-110 opacity-80" src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&controls=1&rel=0&enablejsapi=1`} allow="autoplay; encrypted-media; picture-in-picture" />}
       {wallpaper && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${wallpaper})` }} />}
       <div className="pointer-events-none absolute inset-0" style={{ background: wallpaper || youtubeId ? "var(--focus-media-overlay)" : vibeBackgrounds[vibe] }} />

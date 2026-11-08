@@ -39,13 +39,20 @@ export function CalendarWorkspace() {
   const [streak, setStreak] = useState<TaskStreakSummary>({ current_streak: 0, longest_streak: 0, last_completed_date: null });
   const [initialSchedule, setInitialSchedule] = useState<{ date: string; startTime: string; endTime: string } | undefined>();
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<HoveredTimeSlot | null>(null);
-  const [celebration, setCelebration] = useState<{ kind: "welcome" | "task"; signal: number }>({ kind: "welcome", signal: 1 });
+  const [celebration, setCelebration] = useState<{ kind: "welcome" | "task"; signal: number }>({ kind: "welcome", signal: 0 });
   const refreshStreak = useCallback(() => {
     getTaskStreak(localDateString(new Date())).then(setStreak).catch(() => { /* Dashboard remains usable when insights are unavailable. */ });
   }, []);
 
   useEffect(() => { getTasks().then(setTasks).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load your tasks.")).finally(() => setIsLoading(false)); }, []);
   useEffect(() => { refreshStreak(); }, [refreshStreak]);
+  useEffect(() => {
+    const welcomeKey = "orbit-welcome-seen";
+    if (window.sessionStorage.getItem(welcomeKey)) return;
+    window.sessionStorage.setItem(welcomeKey, "true");
+    const timer = window.setTimeout(() => setCelebration((current) => ({ kind: "welcome", signal: current.signal + 1 })), 350);
+    return () => window.clearTimeout(timer);
+  }, []);
   const events = useMemo(() => tasks.map(taskToEvent), [tasks]);
   const completedCount = tasks.filter((task) => task.is_completed).length;
   const focusMinutes = tasks.reduce((total, task) => total + (task.estimated_minutes ?? 0), 0);

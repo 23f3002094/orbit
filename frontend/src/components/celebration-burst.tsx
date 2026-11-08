@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-type CelebrationKind = "welcome" | "task" | "step";
+type CelebrationKind = "welcome" | "task" | "step" | "task_done";
 
 interface CelebrationBurstProps {
   kind: CelebrationKind;
@@ -15,6 +15,7 @@ const content: Record<CelebrationKind, { emojis: string[]; message: string; deta
   welcome: { emojis: ["☀️", "✨", "🎯", "🟠", "⚡"], message: "Your orbit is ready.", detail: "Choose one honest thing to move forward today." },
   task: { emojis: ["✨", "🎯", "⚡", "🟠", "🌟"], message: "Task locked in.", detail: "A future you just got some breathing room." },
   step: { emojis: ["✨", "⚡", "🌟", "🙌", "🟠"], message: "Step complete.", detail: "Keep the momentum warm." },
+  task_done: { emojis: ["🎉", "🔥", "✨", "🙌", "🏆"], message: "Well done.", detail: "That promise is officially kept." },
 };
 
 const trajectories = [
