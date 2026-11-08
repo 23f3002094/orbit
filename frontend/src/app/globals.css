@@ -1,37 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #040604;
-  --foreground: #effaf1;
-  --surface: #080b08;
-  --surface-raised: #0d120e;
-  --surface-soft: rgba(255, 255, 255, .045);
-  --border: rgba(255, 255, 255, .10);
-  --muted: #94a399;
-  --accent: #ff9f43;
-  --accent-strong: #ed7b19;
-  --accent-ink: #251000;
-  --focus-a: #120906;
-  --focus-b: #241006;
-  --focus-c: #1b0806;
+  --background: #0d1028;
+  --foreground: #f7f5ff;
+  --surface: #12142f;
+  --surface-raised: #1a1b3c;
+  --surface-soft: rgba(255, 255, 255, .055);
+  --border: rgba(220, 212, 255, .14);
+  --muted: #aaa9c8;
+  --accent: #a855f7;
+  --accent-strong: #d1a5ff;
+  --accent-ink: #170528;
+  --focus-a: #0d1028;
+  --focus-b: #21134b;
+  --focus-c: #30163e;
   --focus-media-overlay: rgba(0, 0, 0, .65);
 }
 
 html[data-theme="light"] {
-  --background: #f3f8f4;
-  --foreground: #15231a;
+  --background: #f8f6ff;
+  --foreground: #1f1934;
   --surface: #ffffff;
-  --surface-raised: #e9f1eb;
-  --surface-soft: rgba(21, 35, 26, .055);
-  --border: rgba(21, 35, 26, .13);
-  --muted: #627066;
-  --accent: #f28a24;
-  --accent-strong: #b9520a;
+  --surface-raised: #eeeafd;
+  --surface-soft: rgba(37, 23, 67, .055);
+  --border: rgba(37, 23, 67, .14);
+  --muted: #655d7b;
+  --accent: #8b3fe5;
+  --accent-strong: #6d28d9;
   --accent-ink: #ffffff;
-  --focus-a: #edf7f0;
-  --focus-b: #d9ecdf;
-  --focus-c: #f8e8e6;
-  --focus-media-overlay: rgba(244, 250, 246, .42);
+  --focus-a: #f4efff;
+  --focus-b: #e6dafe;
+  --focus-c: #fdebf0;
+  --focus-media-overlay: rgba(248, 246, 255, .42);
 }
 
 @theme inline {
@@ -56,8 +56,19 @@ body {
 [class*="border-[#46ff96]"] { border-color: var(--accent) !important; }
 [class*="focus:border-[#46ff96]"]:focus { border-color: var(--accent) !important; }
 [class*="accent-[#46ff96]"] { accent-color: var(--accent); }
-[class*="shadow-[#46ff96]"] { box-shadow: 0 12px 28px rgba(255, 159, 67, .24) !important; }
-[class*="hover:bg-[#96ffc1]"]:hover, [class*="hover:bg-[#8dffbd]"]:hover { background-color: #ffc078 !important; }
+[class*="shadow-[#46ff96]"] { box-shadow: 0 12px 28px rgba(168, 85, 247, .30) !important; }
+[class*="hover:bg-[#96ffc1]"]:hover, [class*="hover:bg-[#8dffbd]"]:hover { background-color: #c889ff !important; }
+[class*="text-[#ff9f43]"], [class*="text-[#ffbd78]"], [class*="text-[#ffd1a8]"] { color: var(--accent-strong) !important; }
+[class*="bg-[#ff9f43]"] { background-color: var(--accent) !important; }
+[class*="border-[#ff9f43]"], [class*="hover:border-[#ff9f43]"]:hover { border-color: var(--accent) !important; }
+[class*="focus-visible:outline-[#ff9f43]"]:focus-visible { outline-color: var(--accent) !important; }
+[class*="hover:bg-[#ffc078]"]:hover { background-color: #c889ff !important; }
+[class*="bg-[#ff9f43]/"] { background-color: color-mix(in srgb, var(--accent) 12%, transparent) !important; }
+[class*="bg-[#040604]"], [class*="bg-[#030504]"] { background-color: var(--background) !important; }
+[class*="bg-[#080b08]"], [class*="bg-[#090c09]"], [class*="bg-[#071109]"], [class*="bg-[#090b0a]"] { background-color: var(--surface) !important; }
+[class*="bg-[linear-gradient"] { background: linear-gradient(135deg, rgba(243, 112, 116, .16), rgba(81, 42, 168, .32) 48%, rgba(13, 16, 40, .78)) !important; }
+[class*="from-[#a94608]"] { --tw-gradient-from: #5435bd var(--tw-gradient-from-position) !important; --tw-gradient-to: rgba(84, 53, 189, 0) var(--tw-gradient-to-position) !important; }
+[class*="to-[#ff9f43]"] { --tw-gradient-to: #bc7cff var(--tw-gradient-to-position) !important; }
 
 /* The existing UI uses Tailwind's precise dark palette. These overrides map those
    shared surfaces to semantic colours so every view also has a designed light mode. */
@@ -85,19 +96,19 @@ html[data-theme="light"] [class*="text-[#9cffc5]"] { color: var(--accent-strong)
 html[data-theme="light"] [class*="bg-[#46ff96]"] { background-color: var(--accent) !important; }
 html[data-theme="light"] [class*="focus:border-[#46ff96]"]:focus { border-color: var(--accent) !important; }
 html[data-theme="light"] [class*="bg-[linear-gradient"] { background: linear-gradient(120deg, rgba(242, 138, 36, .16), rgba(255,255,255,.94) 42%, rgba(214, 71, 30, .09)) !important; }
-html[data-theme="light"] .fc { --fc-border-color: rgba(56,28,12,.13); --fc-neutral-bg-color: rgba(56,28,12,.035); --fc-today-bg-color: rgba(242,138,36,.10); color: #493221; }
-html[data-theme="light"] .fc .fc-toolbar-title { color: #15231a; }
-html[data-theme="light"] .fc .fc-button { background: #fff; border-color: rgba(56,28,12,.15); color: #58402d; }
-html[data-theme="light"] .fc .fc-button:hover, html[data-theme="light"] .fc .fc-button:focus, html[data-theme="light"] .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(242,138,36,.10); border-color: rgba(185,82,10,.48); color: #a64608; }
-html[data-theme="light"] .fc .fc-col-header-cell-cushion, html[data-theme="light"] .fc .fc-daygrid-day-number { color: #634632; }
-html[data-theme="light"] .fc .fc-timegrid-slot-label-cushion, html[data-theme="light"] .fc .fc-timegrid-axis-cushion { color: #8a705e; }
-html[data-theme="light"] .fc .fc-daygrid-day:hover .fc-daygrid-day-frame { background: rgba(242,138,36,.055); box-shadow: inset 0 0 0 1px rgba(185,82,10,.25); }
+html[data-theme="light"] .fc { --fc-border-color: rgba(50,31,92,.13); --fc-neutral-bg-color: rgba(50,31,92,.035); --fc-today-bg-color: rgba(139,63,229,.10); color: #41355b; }
+html[data-theme="light"] .fc .fc-toolbar-title { color: #1f1934; }
+html[data-theme="light"] .fc .fc-button { background: #fff; border-color: rgba(50,31,92,.15); color: #51426d; }
+html[data-theme="light"] .fc .fc-button:hover, html[data-theme="light"] .fc .fc-button:focus, html[data-theme="light"] .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(139,63,229,.10); border-color: rgba(109,40,217,.48); color: #6d28d9; }
+html[data-theme="light"] .fc .fc-col-header-cell-cushion, html[data-theme="light"] .fc .fc-daygrid-day-number { color: #5d4d7b; }
+html[data-theme="light"] .fc .fc-timegrid-slot-label-cushion, html[data-theme="light"] .fc .fc-timegrid-axis-cushion { color: #85779e; }
+html[data-theme="light"] .fc .fc-daygrid-day:hover .fc-daygrid-day-frame { background: rgba(139,63,229,.055); box-shadow: inset 0 0 0 1px rgba(109,40,217,.25); }
 
-.fc { --fc-border-color: rgba(255,255,255,.075); --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,.02); --fc-today-bg-color: rgba(255,159,67,.075); --fc-small-font-size: .78rem; color: #c6b8ac; }
+.fc { --fc-border-color: rgba(255,255,255,.075); --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,.02); --fc-today-bg-color: rgba(168,85,247,.10); --fc-small-font-size: .78rem; color: #c9c4e3; }
 .fc .fc-toolbar { gap: .5rem; margin-bottom: 1.25rem; }
 .fc .fc-toolbar-title { color: #fff; font-size: 1.05rem; font-weight: 650; letter-spacing: -.02em; }
 .fc .fc-button { background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.1); border-radius: .7rem; box-shadow: none; color: #c7d4ca; font-size: .75rem; font-weight: 600; padding: .48rem .72rem; text-transform: none; }
-.fc .fc-button:hover, .fc .fc-button:focus, .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(255,159,67,.14); border-color: rgba(255,159,67,.50); color: #ffbd78; box-shadow: none; }
+.fc .fc-button:hover, .fc .fc-button:focus, .fc .fc-button-primary:not(:disabled).fc-button-active { background: rgba(168,85,247,.16); border-color: rgba(192,132,252,.55); color: #d1a5ff; box-shadow: none; }
 .fc .fc-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fc .fc-col-header-cell-cushion { color: #829087; font-size: .67rem; font-weight: 700; padding: .85rem .2rem; text-transform: uppercase; letter-spacing: .1em; }
 .fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { color: #637067; font-size: .7rem; }
@@ -121,20 +132,20 @@ html[data-theme="light"] .fc .fc-daygrid-day:hover .fc-daygrid-day-frame { backg
   transition: background-color .16s ease, box-shadow .16s ease;
 }
 .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
-  background: rgba(255, 159, 67, .06);
-  box-shadow: inset 0 0 0 1px rgba(255, 159, 67, .32);
+  background: rgba(168, 85, 247, .07);
+  box-shadow: inset 0 0 0 1px rgba(192, 132, 252, .38);
 }
 
-.orbit-celebration { background: rgba(22, 10, 5, .92); border: 1px solid rgba(255, 159, 67, .42); box-shadow: 0 24px 58px rgba(255, 121, 28, .22); }
-.orbit-celebration-detail { color: #ffd1a8; }
-.orbit-task-action-menu { background: #0d0906; border: 1px solid rgba(255, 255, 255, .10); box-shadow: 0 28px 65px rgba(0, 0, 0, .7); }
+.orbit-celebration { background: rgba(20, 14, 48, .94); border: 1px solid rgba(192, 132, 252, .46); box-shadow: 0 24px 58px rgba(125, 62, 220, .28); }
+.orbit-celebration-detail { color: #e2c8ff; }
+.orbit-task-action-menu { background: #15102e; border: 1px solid rgba(220, 212, 255, .14); box-shadow: 0 28px 65px rgba(0, 0, 0, .7); }
 
-.orbit-calendar-shell { isolation: isolate; overflow: hidden; background: radial-gradient(ellipse at 4% 14%, rgba(255, 145, 45, .16), transparent 28rem), radial-gradient(ellipse at 97% 84%, rgba(218, 69, 25, .13), transparent 31rem), radial-gradient(circle at 74% 7%, rgba(255, 198, 110, .08), transparent 20rem), #040604; }
-.orbit-calendar-shell::before { background-image: radial-gradient(rgba(255, 179, 102, .12) .6px, transparent .6px); background-size: 22px 22px; content: ""; inset: 0; mask-image: linear-gradient(to bottom, black, transparent 65%); opacity: .34; pointer-events: none; position: absolute; z-index: 0; }
-.orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(255, 159, 67, .07), rgba(8, 11, 8, .92) 38%, rgba(210, 68, 28, .05)) !important; }
+.orbit-calendar-shell { isolation: isolate; overflow: hidden; background: radial-gradient(ellipse at 3% 14%, rgba(243, 112, 116, .30), transparent 30rem), radial-gradient(ellipse at 49% 4%, rgba(141, 54, 249, .36), transparent 34rem), radial-gradient(ellipse at 94% 86%, rgba(116, 73, 229, .23), transparent 30rem), #0d1028; }
+.orbit-calendar-shell::before { background-image: radial-gradient(rgba(209, 165, 255, .16) .6px, transparent .6px); background-size: 22px 22px; content: ""; inset: 0; mask-image: linear-gradient(to bottom, black, transparent 65%); opacity: .34; pointer-events: none; position: absolute; z-index: 0; }
+.orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(168, 85, 247, .10), rgba(18, 20, 47, .91) 38%, rgba(241, 113, 128, .08)) !important; }
 
-html[data-theme="light"] .orbit-celebration { background: rgba(255, 251, 246, .96); border-color: rgba(185, 82, 10, .32); box-shadow: 0 24px 58px rgba(185, 82, 10, .18); }
-html[data-theme="light"] .orbit-celebration-detail { color: #8b4210; }
-html[data-theme="light"] .orbit-task-action-menu { background: #fffaf4; border-color: rgba(112, 58, 20, .18); box-shadow: 0 28px 65px rgba(84, 42, 10, .18); }
-html[data-theme="light"] .orbit-calendar-shell { background: radial-gradient(ellipse at 4% 14%, rgba(242, 138, 36, .18), transparent 28rem), radial-gradient(ellipse at 97% 84%, rgba(219, 86, 29, .12), transparent 31rem), radial-gradient(circle at 74% 7%, rgba(255, 203, 132, .28), transparent 20rem), #f3f8f4; }
-html[data-theme="light"] .orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(255, 248, 240, .9) 55%, rgba(255, 232, 209, .78)) !important; }
+html[data-theme="light"] .orbit-celebration { background: rgba(253, 251, 255, .97); border-color: rgba(109, 40, 217, .32); box-shadow: 0 24px 58px rgba(109, 40, 217, .18); }
+html[data-theme="light"] .orbit-celebration-detail { color: #6630a5; }
+html[data-theme="light"] .orbit-task-action-menu { background: #fcfaff; border-color: rgba(72, 43, 132, .18); box-shadow: 0 28px 65px rgba(61, 33, 112, .16); }
+html[data-theme="light"] .orbit-calendar-shell { background: radial-gradient(ellipse at 3% 14%, rgba(243, 112, 116, .22), transparent 30rem), radial-gradient(ellipse at 49% 4%, rgba(141, 54, 249, .24), transparent 34rem), radial-gradient(ellipse at 94% 86%, rgba(116, 73, 229, .15), transparent 30rem), #f8f6ff; }
+html[data-theme="light"] .orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(255, 255, 255, .93), rgba(244, 237, 255, .92) 55%, rgba(255, 236, 241, .82)) !important; }

@@ -29,7 +29,7 @@ export function TaskForm({ onClose, onCreated, initialSchedule, taskToEdit, onUp
   const [endTime, setEndTime] = useState(taskToEdit?.end_time?.slice(0, 5) ?? initialSchedule?.endTime ?? "");
   const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority ?? "should_do");
   const [category, setCategory] = useState(taskToEdit?.category ?? "Personal");
-  const [color, setColor] = useState(taskToEdit?.color ?? "#ff9f43");
+  const [color, setColor] = useState(taskToEdit?.color ?? "#a855f7");
   const [estimatedMinutes, setEstimatedMinutes] = useState(taskToEdit?.estimated_minutes ?? 30);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
