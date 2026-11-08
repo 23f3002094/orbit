@@ -11,7 +11,7 @@ interface OrbitNavProps {
 const links = [
   { href: "/", label: "Calendar", icon: CalendarDays },
   { href: "/today", label: "Today", icon: Clock3 },
-  { href: "/insights", label: "Focus insights", icon: Target },
+  { href: "/insights", label: "Momentum", icon: Target },
 ];
 
 export function OrbitNav({ className = "" }: OrbitNavProps) {

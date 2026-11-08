@@ -34,7 +34,7 @@ export function FocusDashboard() {
         setSessions(intervals);
         setTaskCompletion(completion);
       })
-      .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load focus insights."));
+      .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Orbit could not load Momentum."));
   }, [today]);
 
   const week = useMemo(() => {
@@ -69,7 +69,7 @@ export function FocusDashboard() {
     <main className="min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8">
       <OrbitNav className="fixed left-5 top-24 z-20 hidden w-52 xl:block" />
       <div className="mx-auto max-w-5xl xl:ml-[17rem] xl:mr-8">
-        <header><p className="text-xs font-bold uppercase tracking-[.18em] text-[#8dffbb]">Focus insights</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-white">Your attention, visible.</h1><p className="mt-3 max-w-xl leading-7 text-[#94a399]">Every focused minute and kept promise becomes part of your daily history.</p></header>
+        <header><p className="text-xs font-bold uppercase tracking-[.18em] text-[#8dffbb]">Momentum</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-white">Your attention, visible.</h1><p className="mt-3 max-w-xl leading-7 text-[#94a399]">Every focused minute and kept promise becomes part of your daily history.</p></header>
         {!today ? <p className="mt-10 text-[#8e9d93]">Loading your local focus timeline...</p> : error ? <p className="mt-10 rounded-2xl border border-[#ff5151]/30 bg-[#ff5151]/10 p-4 text-[#ffaaaa]">{error}</p> : <>
           <section className="mt-8 grid gap-4 sm:grid-cols-3"><Metric icon={<Timer size={19} />} label="Focused today" value={`${todaySummary?.focused_minutes ?? 0} min`} /><Metric icon={<Flame size={19} />} label="Pomodoros today" value={String(todaySummary?.completed_pomodoros ?? 0)} /><Metric icon={<Timer size={19} />} label="Focused this week" value={`${focusedMinutes} min`} /></section>
           <section className="mt-5 grid gap-4 md:grid-cols-3">
