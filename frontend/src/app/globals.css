@@ -153,13 +153,13 @@ html[data-theme="light"] .orbit-task-action-menu { background: #fcfaff; border-c
 html[data-theme="light"] .orbit-calendar-shell { background: radial-gradient(ellipse at 3% 14%, rgba(243, 112, 116, .22), transparent 30rem), radial-gradient(ellipse at 49% 4%, rgba(141, 54, 249, .24), transparent 34rem), radial-gradient(ellipse at 94% 86%, rgba(116, 73, 229, .15), transparent 30rem), #f8f6ff; }
 html[data-theme="light"] .orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(255, 255, 255, .93), rgba(244, 237, 255, .92) 55%, rgba(255, 236, 241, .82)) !important; }
 
-.focus-rhythm-cell { display: block; height: .75rem; width: .75rem; border-radius: .2rem; }
-.focus-rhythm-0 { background: rgba(255, 255, 255, .075); }
+.focus-rhythm-cell { display: block; flex: 0 0 .875rem; height: .875rem; width: .875rem; border: 1px solid rgba(255, 255, 255, .06); border-radius: .18rem; }
+.focus-rhythm-0 { background: #292b48; }
 .focus-rhythm-1 { background: #35215f; }
 .focus-rhythm-2 { background: #5c31a8; }
 .focus-rhythm-3 { background: #8b4be7; }
 .focus-rhythm-4 { background: #d09aff; box-shadow: 0 0 10px rgba(193, 119, 255, .45); }
-html[data-theme="light"] .focus-rhythm-0 { background: #e9e3f5; }
+html[data-theme="light"] .focus-rhythm-0 { background: #ded9eb; border-color: rgba(71, 47, 126, .08); }
 html[data-theme="light"] .focus-rhythm-1 { background: #d8c4f4; }
 html[data-theme="light"] .focus-rhythm-2 { background: #b587eb; }
 html[data-theme="light"] .focus-rhythm-3 { background: #8b4be7; }
