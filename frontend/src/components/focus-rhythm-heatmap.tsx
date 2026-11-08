@@ -15,12 +15,6 @@ function dateKey(date: Date): string {
   return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
 }
 
-function previousDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() - days);
-  return result;
-}
-
 function levelFor(minutes: number): number {
   if (minutes === 0) return 0;
   if (minutes < 25) return 1;
@@ -36,7 +30,11 @@ export function FocusRhythmHeatmap({ endDate }: { endDate: string }) {
 
   const period = useMemo(() => {
     const end = parseDay(endDate);
-    if (range === "year") return { start: previousDays(end, 364), days: 365, label: "last 365 days" };
+    if (range === "year") {
+      const start = new Date(end.getFullYear(), end.getMonth() - 11, 1, 12);
+      const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+      return { start, days, label: "the last 12 months" };
+    }
     const start = new Date(end.getFullYear(), end.getMonth(), 1, 12);
     const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
     return { start, days, label: "this month" };
@@ -54,26 +52,31 @@ export function FocusRhythmHeatmap({ endDate }: { endDate: string }) {
     return () => { active = false; };
   }, [endDate, period.days]);
 
-  const { weeks, byDate, monthLabels } = useMemo(() => {
+  const { monthGroups, byDate } = useMemo(() => {
     const end = parseDay(endDate);
     const byDate = new Map(summary.map((day) => [day.focused_on, day]));
-    const gridStart = previousDays(period.start, period.start.getDay());
-    const totalDays = Math.floor((end.getTime() - gridStart.getTime()) / 86_400_000) + 1;
-    const weeks = Array.from({ length: Math.ceil(totalDays / 7) }, (_, week) => Array.from({ length: 7 }, (_, weekday) => {
-      const date = previousDays(gridStart, -(week * 7 + weekday));
-      const key = dateKey(date);
-      return date < period.start || date > end ? null : { key, date, summary: byDate.get(key) };
-    }));
-    const monthLabels = weeks.map((week, weekIndex) => {
-      const monthStart = week.find((day) => day?.date.getDate() === 1);
-      const first = week.find(Boolean);
-      const labelDay = monthStart ?? (weekIndex === 0 ? first : null);
-      return labelDay ? labelDay.date.toLocaleDateString(undefined, { month: "short" }) : "";
-    });
-    return { weeks, byDate, monthLabels };
+    const monthGroups: { label: string; key: string; weeks: ({ key: string; date: Date; summary?: DailyFocusSummary } | null)[][] }[] = [];
+    const cursor = new Date(period.start.getFullYear(), period.start.getMonth(), 1, 12);
+
+    while (cursor <= end) {
+      const monthStart = new Date(cursor);
+      const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+      const weeks = Array.from({ length: Math.ceil((monthStart.getDay() + daysInMonth) / 7) }, (_, week) => Array.from({ length: 7 }, (_, weekday) => {
+        const dayOfMonth = week * 7 + weekday - monthStart.getDay() + 1;
+        if (dayOfMonth < 1 || dayOfMonth > daysInMonth) return null;
+        const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), dayOfMonth, 12);
+        if (date < period.start || date > end) return null;
+        const key = dateKey(date);
+        return { key, date, summary: byDate.get(key) };
+      }));
+      monthGroups.push({ key: `${monthStart.getFullYear()}-${monthStart.getMonth()}`, label: monthStart.toLocaleDateString(undefined, { month: "short" }), weeks });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return { monthGroups, byDate };
   }, [endDate, period.start, summary]);
 
   const activeDays = Array.from(byDate.values()).filter((day) => day.focused_minutes > 0).length;
 
-  return <section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#ffbd78]">Focus rhythm</p><h2 className="mt-1 text-xl font-semibold text-white">Consistency, made visible.</h2><p className="mt-1 text-sm text-[#c6aca0]">{activeDays} focused days in {period.label}.</p></div><div className="rounded-xl border border-white/10 bg-black/20 p-1"><button onClick={() => setRange("month")} className={range === "month" ? "rounded-lg bg-[#ff9f43] px-3 py-1.5 text-xs font-bold text-black" : "rounded-lg px-3 py-1.5 text-xs text-[#c6aca0]"}>Month</button><button onClick={() => setRange("year")} className={range === "year" ? "rounded-lg bg-[#ff9f43] px-3 py-1.5 text-xs font-bold text-black" : "rounded-lg px-3 py-1.5 text-xs text-[#c6aca0]"}>Year</button></div></div><div className="mt-6 overflow-x-auto"><div className="min-w-max"><div className="ml-8 flex gap-1">{monthLabels.map((label, index) => <span key={index} className="w-3 text-[9px] font-bold text-[#a89183]">{label}</span>)}</div><div className="mt-2 flex gap-2"><div className="grid grid-rows-7 gap-1 pt-0.5 text-[9px] font-bold text-[#a89183]"><span></span><span>M</span><span></span><span>W</span><span></span><span>F</span><span></span></div><div className="flex gap-1">{weeks.map((week, weekIndex) => <div key={weekIndex} className="grid grid-rows-7 gap-1">{week.map((day, weekday) => day ? <span key={day.key} title={day.date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) + ": " + (day.summary?.focused_minutes ?? 0) + " focused min · " + (day.summary?.completed_pomodoros ?? 0) + " Pomodoros"} className={"focus-rhythm-cell focus-rhythm-" + levelFor(day.summary?.focused_minutes ?? 0)} aria-label={day.key + ": " + (day.summary?.focused_minutes ?? 0) + " focused minutes"} /> : <span key={"empty-" + weekday} className="size-3" />)}</div>)}</div></div></div></div><div className="mt-5 flex items-center justify-end gap-2 text-[10px] text-[#c6aca0]"><span>Less</span>{[0, 1, 2, 3, 4].map((level) => <span key={level} className={"focus-rhythm-cell focus-rhythm-" + level} />)}<span>More</span></div>{isLoading && <p className="mt-3 text-xs text-[#c6aca0]">Loading focus rhythm...</p>}</section>;
+  return <section className="mt-5 rounded-[2rem] border border-white/10 bg-[#080b08] p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#ffbd78]">Focus rhythm</p><h2 className="mt-1 text-xl font-semibold text-white">Consistency, made visible.</h2><p className="mt-1 text-sm text-[#c6aca0]">{activeDays} focused days in {period.label}.</p></div><div className="rounded-xl border border-white/10 bg-black/20 p-1"><button onClick={() => setRange("month")} className={range === "month" ? "rounded-lg bg-[#ff9f43] px-3 py-1.5 text-xs font-bold text-black" : "rounded-lg px-3 py-1.5 text-xs text-[#c6aca0]"}>Month</button><button onClick={() => setRange("year")} className={range === "year" ? "rounded-lg bg-[#ff9f43] px-3 py-1.5 text-xs font-bold text-black" : "rounded-lg px-3 py-1.5 text-xs text-[#c6aca0]"}>Year</button></div></div><div className="mt-6 overflow-x-auto pb-1"><div className="flex min-w-max gap-4"><div className="grid grid-rows-7 gap-1 pt-[1.45rem] text-[9px] font-bold text-[#a89183]"><span></span><span>M</span><span></span><span>W</span><span></span><span>F</span><span></span></div>{monthGroups.map((month) => <div key={month.key} className="shrink-0"><p className="h-4 text-[9px] font-bold uppercase tracking-[.12em] text-[#a89183]">{month.label}</p><div className="mt-2 flex gap-1">{month.weeks.map((week, weekIndex) => <div key={weekIndex} className="grid grid-rows-7 gap-1">{week.map((day, weekday) => day ? <span key={day.key} title={day.date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) + ": " + (day.summary?.focused_minutes ?? 0) + " focused min · " + (day.summary?.completed_pomodoros ?? 0) + " Pomodoros"} className={"focus-rhythm-cell focus-rhythm-" + levelFor(day.summary?.focused_minutes ?? 0)} aria-label={day.key + ": " + (day.summary?.focused_minutes ?? 0) + " focused minutes"} /> : <span key={`${month.key}-${weekIndex}-${weekday}`} className="focus-rhythm-cell opacity-0" />)}</div>)}</div></div>)}</div></div><div className="mt-5 flex items-center justify-end gap-2 text-[10px] text-[#c6aca0]"><span>Less</span>{[0, 1, 2, 3, 4].map((level) => <span key={level} className={"focus-rhythm-cell focus-rhythm-" + level} />)}<span>More</span></div>{isLoading && <p className="mt-3 text-xs text-[#c6aca0]">Loading focus rhythm...</p>}</section>;
 }
