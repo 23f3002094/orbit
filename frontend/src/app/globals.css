@@ -153,26 +153,6 @@ html[data-theme="light"] .orbit-task-action-menu { background: #fffaf5; border-c
 html[data-theme="light"] .orbit-calendar-shell { background: radial-gradient(ellipse at 3% 14%, rgba(255, 105, 46, .20), transparent 30rem), radial-gradient(ellipse at 49% 4%, rgba(255, 130, 31, .20), transparent 34rem), radial-gradient(ellipse at 94% 86%, rgba(190, 54, 13, .12), transparent 30rem), #fff8f2; }
 html[data-theme="light"] .orbit-calendar-shell aside { background: linear-gradient(145deg, rgba(255, 255, 255, .93), rgba(255, 242, 230, .92) 55%, rgba(255, 234, 218, .82)) !important; }
 
-/* The supplied landscape is deliberately an atmosphere, not a wallpaper: solid
-   calendar and card surfaces remain the visual priority. */
-.orbit-ambient-shell {
-  background-color: #050505 !important;
-  background-image: linear-gradient(rgba(5, 5, 5, .83), rgba(5, 5, 5, .89)), url("/Warm%20Peach%20Wave%20Landscape.png") !important;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
-}
-
-html[data-theme="light"] .orbit-ambient-shell {
-  background-color: #fff8f2 !important;
-  background-image: linear-gradient(rgba(255, 248, 242, .77), rgba(255, 248, 242, .84)), url("/Warm%20Peach%20Wave%20Landscape.png") !important;
-}
-
-@media (max-width: 640px) {
-  .orbit-ambient-shell { background-attachment: scroll; }
-}
-
 .focus-rhythm-cell { display: block; flex: 0 0 .875rem; height: .875rem; width: .875rem; border: 1px solid rgba(255, 255, 255, .06); border-radius: .18rem; }
 .focus-rhythm-0 { background: #2a211d; }
 .focus-rhythm-1 { background: #65300e; }

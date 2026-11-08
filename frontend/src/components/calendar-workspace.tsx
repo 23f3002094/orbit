@@ -111,7 +111,7 @@ export function CalendarWorkspace() {
   if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} onUpdateTask={(updatedTask) => { setTasks((items) => items.map((item) => item.id === updatedTask.id ? updatedTask : item)); setActiveTask(updatedTask); }} onDeleteTask={(taskId) => { setTasks((items) => items.filter((item) => item.id !== taskId)); setActiveTask(null); refreshStreak(); }} />;
 
   return (
-    <main className="orbit-calendar-shell orbit-ambient-shell min-h-screen bg-[#040604] text-[#effaf1]">
+    <main className="orbit-calendar-shell min-h-screen bg-[#040604] text-[#effaf1]">
       <CelebrationBurst kind={celebration.kind} signal={celebration.signal} />
       <div className="relative z-10 mx-auto max-w-[1700px] px-4 py-5 sm:px-7 sm:py-7">
         <header className="mb-6 flex flex-col gap-5 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(115deg,rgba(255,159,67,.16),rgba(20,8,5,.78)_40%,rgba(220,74,32,.10))] p-5 shadow-2xl shadow-black/25 backdrop-blur sm:p-7 lg:flex-row lg:items-end lg:justify-between">
