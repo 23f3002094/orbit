@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", ".env.supabase"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
