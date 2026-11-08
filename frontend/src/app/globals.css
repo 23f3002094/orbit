@@ -37,14 +37,15 @@ html[data-theme="light"] {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-manrope);
+  --font-sans: var(--font-sora);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+  font-weight: 700;
 }
 
 .orbit-theme-toggle { background: var(--surface); border-color: var(--border); color: var(--foreground); }
@@ -95,6 +96,8 @@ html[data-theme="light"] [class*="text-[#8dffbb]"],
 html[data-theme="light"] [class*="text-[#9cffc5]"] { color: var(--accent-strong) !important; }
 html[data-theme="light"] [class*="bg-[#46ff96]"] { background-color: var(--accent) !important; }
 html[data-theme="light"] [class*="focus:border-[#46ff96]"]:focus { border-color: var(--accent) !important; }
+html[data-theme="light"] [class*="bg-[#46ff96]/10"], html[data-theme="light"] [class*="bg-[#ff9f43]/10"] { background-color: #8b3fe5 !important; }
+html[data-theme="light"] [class*="bg-[#46ff96]/10"] [class*="text-"], html[data-theme="light"] [class*="bg-[#ff9f43]/10"] [class*="text-"] { color: #ffffff !important; }
 html[data-theme="light"] [class*="bg-[linear-gradient"] { background: linear-gradient(120deg, rgba(242, 138, 36, .16), rgba(255,255,255,.94) 42%, rgba(214, 71, 30, .09)) !important; }
 html[data-theme="light"] .fc { --fc-border-color: rgba(50,31,92,.13); --fc-neutral-bg-color: rgba(50,31,92,.035); --fc-today-bg-color: rgba(139,63,229,.10); color: #41355b; }
 html[data-theme="light"] .fc .fc-toolbar-title { color: #1f1934; }

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Manrope } from "next/font/google";
+import { Geist_Mono, Sora } from "next/font/google";
 import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sora.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}<ThemeToggle /></body>
     </html>
