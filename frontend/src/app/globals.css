@@ -159,6 +159,7 @@ html[data-theme="light"] .orbit-calendar-shell aside { background: linear-gradie
 .focus-rhythm-2 { background: #a64a10; }
 .focus-rhythm-3 { background: #e9701d; }
 .focus-rhythm-4 { background: #ffc084; box-shadow: 0 0 10px rgba(255, 137, 42, .45); }
+.focus-rhythm-future { opacity: .55; }
 .focus-monochrome { filter: grayscale(1); }
 html[data-theme="light"] .focus-rhythm-0 { background: #eee1d6; border-color: rgba(98, 48, 15, .08); }
 html[data-theme="light"] .focus-rhythm-1 { background: #f3caa5; }
