@@ -108,7 +108,7 @@ export function CalendarWorkspace() {
     setHoveredTimeSlot((current) => current && current.left === nextSlot.left && current.top === nextSlot.top && current.width === nextSlot.width && current.height === nextSlot.height ? current : nextSlot);
   }
   async function updateActiveTaskCompletion(isCompleted: boolean) { if (!activeTask) return; const updatedTask = await updateTaskCompletion(activeTask.id, isCompleted); setTasks((currentTasks) => currentTasks.map((task) => task.id === updatedTask.id ? updatedTask : task)); setActiveTask(updatedTask); refreshStreak(); }
-  if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} onEdit={() => { setTaskToEdit(activeTask); setActiveTask(null); setIsCreating(true); }} />;
+  if (activeTask) return <FocusSpace task={activeTask} onExit={() => setActiveTask(null)} onUpdateCompletion={updateActiveTaskCompletion} onUpdateTask={(updatedTask) => { setTasks((items) => items.map((item) => item.id === updatedTask.id ? updatedTask : item)); setActiveTask(updatedTask); }} onDeleteTask={(taskId) => { setTasks((items) => items.filter((item) => item.id !== taskId)); setActiveTask(null); refreshStreak(); }} />;
 
   return (
     <main className="orbit-calendar-shell min-h-screen bg-[#040604] text-[#effaf1]">

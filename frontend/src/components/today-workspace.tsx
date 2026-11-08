@@ -107,7 +107,7 @@ export function TodayWorkspace() {
     setActiveTask(updated);
   }
 
-  if (activeTask) return <FocusSpace task={activeTask} onExit={() => router.push("/")} onUpdateCompletion={updateFocusCompletion} onEdit={() => setActiveTask(null)} />;
+  if (activeTask) return <FocusSpace task={activeTask} onExit={() => router.push("/")} onUpdateCompletion={updateFocusCompletion} onUpdateTask={(updatedTask) => { setTasks((items) => items.map((item) => item.id === updatedTask.id ? updatedTask : item)); setActiveTask(updatedTask); }} onDeleteTask={(taskId) => { setTasks((items) => items.filter((item) => item.id !== taskId)); router.push("/"); }} />;
 
   return <main className="min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8"><OrbitNav className="fixed left-5 top-24 z-20 hidden w-52 xl:block" /><CelebrationBurst kind="task_done" signal={taskCelebration} /><div className="mx-auto max-w-6xl xl:ml-[17rem] xl:mr-8">
     <header className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#ffbd78]">Today command center</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.045em] text-white">{todayLabel || "Loading today..."}</h1><p className="mt-2 max-w-xl text-sm leading-6 text-[#aebdb2]">Plan less. Notice the next honest move, then begin.</p></div><div className="flex items-center gap-2"><Link href="/" className="rounded-full border border-white/10 bg-white/[.04] px-4 py-2.5 text-sm text-[#d5e3d9] hover:border-[#ff9f43]/60">Calendar</Link><Link href="/insights" className="rounded-full border border-white/10 bg-white/[.04] px-4 py-2.5 text-sm text-[#d5e3d9] hover:border-[#ff9f43]/60">Insights</Link></div></header>
