@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Sora } from "next/font/google";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AuthGate, AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const sora = Sora({
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${sora.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}<ThemeToggle /></body>
+      <body className="min-h-full flex flex-col"><AuthProvider><AuthGate>{children}</AuthGate></AuthProvider><ThemeToggle /></body>
     </html>
   );
 }

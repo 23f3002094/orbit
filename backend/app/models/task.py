@@ -25,6 +25,8 @@ class Task(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    # Nullable only to preserve pre-auth local tasks during migration. New API writes always set it.
+    user_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     scheduled_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
