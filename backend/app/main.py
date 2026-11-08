@@ -186,7 +186,7 @@ def get_daily_focus_summary(
     db: Session = Depends(get_db),
 ) -> list[DailyFocusSummary]:
     """Return daily completed focus minutes for a dashboard date range."""
-    days = max(1, min(days, 90))
+    days = max(1, min(days, 366))
     start_date = end_date - timedelta(days=days - 1)
     statement = (
         select(
