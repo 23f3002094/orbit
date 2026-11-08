@@ -12,7 +12,7 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "reac
 import { FocusSpace } from "@/components/focus-space";
 import { TaskForm } from "@/components/task-form";
 import { CelebrationBurst } from "@/components/celebration-burst";
-import { getTaskStreak, getTasks, updateTask, updateTaskCompletion } from "@/lib/api";
+import { deleteTask, getTaskStreak, getTasks, updateTask, updateTaskCompletion } from "@/lib/api";
 import type { Task } from "@/types/task";
 import type { TaskStreakSummary } from "@/types/focus";
 
@@ -60,6 +60,11 @@ export function CalendarWorkspace() {
   function addCreatedTask(task: Task) { setTasks((currentTasks) => [...currentTasks, task]); setIsCreating(false); setCelebration((current) => ({ kind: "task", signal: current.signal + 1 })); refreshStreak(); }
   function updateSavedTask(task: Task) { setTasks((currentTasks) => currentTasks.map((item) => item.id === task.id ? task : item)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
   function removeDeletedTask(taskId: string) { setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId)); setTaskToEdit(undefined); setIsCreating(false); refreshStreak(); }
+  async function deleteTaskFromActions(task: Task) {
+    if (!window.confirm("Delete \"" + task.title + "\"? This cannot be undone.")) return;
+    try { await deleteTask(task.id); removeDeletedTask(task.id); setTaskActionTarget(null); }
+    catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Orbit could not delete that task."); }
+  }
   function formatTimeForInput(date: Date) { return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`; }
   function openTaskFormForSlot(clickInfo: DateClickArg) {
     const date = clickInfo.dateStr.slice(0, 10);
@@ -124,13 +129,13 @@ export function CalendarWorkspace() {
       </div>
       {hoveredTimeSlot && <div className="pointer-events-none fixed z-10 rounded-md border border-[#ff9f43]/70 bg-[#ff9f43]/[0.07] shadow-[inset_0_0_18px_rgba(255,159,67,.10)]" style={hoveredTimeSlot} />}
       {isCreating && <TaskForm initialSchedule={initialSchedule} taskToEdit={taskToEdit} onClose={() => { setTaskToEdit(undefined); setIsCreating(false); }} onCreated={addCreatedTask} onUpdated={updateSavedTask} onDeleted={removeDeletedTask} />}
-      {taskActionTarget && <TaskActionMenu task={taskActionTarget} onClose={() => setTaskActionTarget(null)} onFocus={() => { setActiveTask(taskActionTarget); setTaskActionTarget(null); }} onEdit={() => { setTaskToEdit(taskActionTarget); setTaskActionTarget(null); setIsCreating(true); }} />}
+      {taskActionTarget && <TaskActionMenu task={taskActionTarget} onClose={() => setTaskActionTarget(null)} onFocus={() => { setActiveTask(taskActionTarget); setTaskActionTarget(null); }} onEdit={() => { setTaskToEdit(taskActionTarget); setTaskActionTarget(null); setIsCreating(true); }} onDelete={() => { void deleteTaskFromActions(taskActionTarget); }} />}
     </main>
   );
 }
 
 function CalendarMessage({ title, detail }: { title: string; detail: string }) { return <div className="grid min-h-[600px] place-items-center text-center"><div><p className="text-lg font-medium text-white">{title}</p><p className="mt-2 max-w-sm text-sm text-[#8f9e93]">{detail}</p></div></div>; }
 
-function TaskActionMenu({ task, onClose, onFocus, onEdit }: { task: Task; onClose: () => void; onFocus: () => void; onEdit: () => void }) {
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={onClose}><section role="dialog" aria-modal="true" aria-labelledby="task-action-title" onMouseDown={(event) => event.stopPropagation()} className="orbit-task-action-menu w-full max-w-sm rounded-3xl p-6"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#ffbd78]">Task options</p><h2 id="task-action-title" className="mt-2 truncate text-xl font-semibold text-white">{task.title}</h2><p className="mt-2 text-sm text-[#aebdb2]">What would you like to do?</p><div className="mt-6 grid gap-3"><button onClick={onFocus} className="flex items-center justify-between rounded-2xl bg-[#ff9f43] px-4 py-4 text-left font-bold text-black transition hover:bg-[#ffc078]"><span>Enter Focus Room</span><Clock3 size={19} /></button><button onClick={onEdit} className="rounded-2xl border border-white/15 bg-white/[.04] px-4 py-4 text-left font-semibold text-white transition hover:border-[#ff9f43]/60 hover:bg-[#ff9f43]/[.07]">Edit task details</button><button onClick={onClose} className="py-2 text-sm font-medium text-[#aebdb2] hover:text-white">Cancel</button></div></section></div>;
+function TaskActionMenu({ task, onClose, onFocus, onEdit, onDelete }: { task: Task; onClose: () => void; onFocus: () => void; onEdit: () => void; onDelete: () => void }) {
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={onClose}><section role="dialog" aria-modal="true" aria-labelledby="task-action-title" onMouseDown={(event) => event.stopPropagation()} className="orbit-task-action-menu w-full max-w-sm rounded-3xl p-6"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#ffbd78]">Task options</p><h2 id="task-action-title" className="mt-2 truncate text-xl font-semibold text-white">{task.title}</h2><p className="mt-2 text-sm text-[#aebdb2]">What would you like to do?</p><div className="mt-6 grid gap-3"><button onClick={onFocus} className="flex items-center justify-between rounded-2xl bg-[#ff9f43] px-4 py-4 text-left font-bold text-black transition hover:bg-[#ffc078]"><span>Enter Focus Room</span><Clock3 size={19} /></button><button onClick={onEdit} className="rounded-2xl border border-white/15 bg-white/[.04] px-4 py-4 text-left font-semibold text-white transition hover:border-[#ff9f43]/60 hover:bg-[#ff9f43]/[.07]">Edit task details</button><button onClick={onDelete} className="rounded-2xl px-4 py-2 text-left text-sm font-semibold text-[#ff8b8b] transition hover:bg-[#ff5151]/10">Delete task</button><button onClick={onClose} className="py-2 text-sm font-medium text-[#aebdb2] hover:text-white">Cancel</button></div></section></div>;
 }
