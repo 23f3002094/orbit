@@ -16,7 +16,7 @@ import { deleteTask, getTaskStreak, getTasks, updateTask, updateTaskCompletion }
 import type { Task } from "@/types/task";
 import type { TaskStreakSummary } from "@/types/focus";
 
-const priorityColors = { must_do: "#ff6f91", should_do: "#a855f7", could_do: "#9fa0c9" } as const;
+const priorityColors = { must_do: "#ff6f91", should_do: "#ff9f43", could_do: "#9fa0c9" } as const;
 interface HoveredTimeSlot { left: number; top: number; width: number; height: number; }
 
 function taskToEvent(task: Task): EventInput {

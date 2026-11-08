@@ -34,7 +34,7 @@ class Task(Base):
         nullable=False,
     )
     category: Mapped[str] = mapped_column(String(50), nullable=False)
-    color: Mapped[str] = mapped_column(String(7), nullable=False, default="#a855f7", server_default="#a855f7")
+    color: Mapped[str] = mapped_column(String(7), nullable=False, default="#ff8a2a", server_default="#ff8a2a")
     estimated_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(

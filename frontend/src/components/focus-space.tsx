@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Check, Coffee, Flame, Grip, ImagePlus, Palette, Pause, Pencil, Play, Plus, Quote, RotateCcw, Settings2, Sparkles, Trash2, Video } from "lucide-react";
+import { ArrowLeft, Check, Circle, Coffee, Flame, Grip, ImagePlus, Palette, Pause, Pencil, Play, Plus, RotateCcw, Settings2, Sparkles, Trash2, Video } from "lucide-react";
 import { type ChangeEvent, type FormEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { createFocusSession, createSubtask, getDailyFocusSummary, getSubtasks, updateSubtaskCompletion } from "@/lib/api";
@@ -100,6 +100,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onUpdateTask, onD
   const [subtaskCelebrationOrigin, setSubtaskCelebrationOrigin] = useState<{ x: number; y: number } | null>(null);
   const [taskCelebration, setTaskCelebration] = useState(0);
   const [isEditingTask, setIsEditingTask] = useState(false);
+  const [isMonochrome, setIsMonochrome] = useState(false);
   const unloggedWorkSeconds = useRef(0);
   const prefersReducedMotion = useReducedMotion();
   const todayKey = new Date().toLocaleDateString("en-CA");
@@ -264,9 +265,10 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onUpdateTask, onD
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8">
+    <main className={`relative min-h-screen overflow-hidden bg-[#030504] px-4 py-5 text-[#f4fff7] sm:px-8 ${isMonochrome ? "focus-monochrome" : ""}`}>
       <CelebrationBurst kind="step" signal={subtaskCelebration} origin={subtaskCelebrationOrigin} />
       <CelebrationBurst kind="task_done" signal={taskCelebration} />
+      <button onClick={() => setIsMonochrome((value) => !value)} className="fixed left-1/2 top-5 z-40 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-xs font-bold text-white backdrop-blur-md hover:border-white/60"><Circle size={13} fill={isMonochrome ? "currentColor" : "none"} /> {isMonochrome ? "Color on" : "Monochrome"}</button>
       {youtubeId && <iframe id="orbit-youtube-player" title="YouTube focus ambience" onLoad={() => updateVideoVolume(videoVolume)} className="absolute inset-0 size-full scale-110 opacity-80" src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}&controls=1&rel=0&enablejsapi=1`} allow="autoplay; encrypted-media; picture-in-picture" />}
       {wallpaper && <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${wallpaper})` }} />}
       <div className="pointer-events-none absolute inset-0" style={{ background: wallpaper || youtubeId ? "var(--focus-media-overlay)" : vibeBackgrounds[vibe] }} />
@@ -295,9 +297,7 @@ export function FocusSpace({ task, onExit, onUpdateCompletion, onUpdateTask, onD
         <div className="rounded-b-[1.4rem] border border-white/10 bg-[#090b0a]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-white">Session breakdown</h2><div className="grid size-10 place-items-center rounded-full p-1" style={{ background: `conic-gradient(${accent} ${subtaskProgress}%, rgba(255,255,255,.12) ${subtaskProgress}%)` }}><span className="grid size-full place-items-center rounded-full bg-[#090b0a] text-[10px] font-bold text-white">{completedSubtasks}/{subtasks.length}</span></div></div><div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${subtaskProgress}%`, backgroundColor: accent }} /></div><div className="max-h-48 space-y-1 overflow-y-auto pr-1">{subtasks.length === 0 && <p className="rounded-xl border border-dashed border-white/10 px-3 py-4 text-sm text-[#9bad9f]">Break the task into one small next action.</p>}{subtasks.map((subtask) => <button key={subtask.id} onClick={(event) => { void toggleSubtask(subtask, event); }} className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-white/[0.06]"><span data-subtask-check className={`grid size-5 shrink-0 place-items-center rounded-md border ${subtask.is_completed ? "border-[#46ff96] bg-[#46ff96] text-black" : "border-white/25"}`}>{subtask.is_completed && <Check size={13} strokeWidth={3} />}</span><span className={`text-sm ${subtask.is_completed ? "text-[#7e8c82] line-through" : "text-[#effaf1]"}`}>{subtask.title}</span></button>)}</div><form onSubmit={addSubtask} className="mt-3 flex gap-2 border-t border-white/10 pt-3"><label className="sr-only" htmlFor="subtask-title">Add a focus step</label><input id="subtask-title" value={newSubtask} onChange={(event) => setNewSubtask(event.target.value)} maxLength={200} placeholder="Add a focus step" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#6e7e73] focus:border-[#46ff96]" /><button disabled={isSavingSubtask} className="grid size-10 place-items-center rounded-xl bg-[#46ff96] text-black hover:bg-[#8dffbd] disabled:opacity-60" aria-label="Add focus step"><Plus size={18} /></button></form></div>
       </DraggableWidget>
 
-      <DraggableWidget label="motivation" anchorClassName="bottom-5 right-5 w-[min(18rem,calc(100vw-2.5rem))] sm:bottom-8 sm:right-8">
-        <div className="rounded-b-[1.4rem] border border-white/10 bg-[#090b0a]/90 p-4 shadow-2xl shadow-black/70 backdrop-blur-xl"><Quote size={16} className="text-[#a855f7]" /><p className="mt-2 text-sm font-medium leading-6 text-white">&ldquo;{motivationalQuote}&rdquo;</p><p className="mt-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#aeb0d0]">Stay in the orbit</p></div>
-      </DraggableWidget>
+      <p className="fixed bottom-6 right-6 z-20 max-w-64 text-right text-sm leading-6 text-white/70">&ldquo;{motivationalQuote}&rdquo;</p>
       {isEditingTask && <TaskForm taskToEdit={task} onClose={() => setIsEditingTask(false)} onCreated={() => {}} onUpdated={(updatedTask) => { onUpdateTask(updatedTask); setIsEditingTask(false); }} onDeleted={onDeleteTask} />}
       {error && <p role="alert" className="fixed bottom-5 left-1/2 z-40 max-w-sm -translate-x-1/2 rounded-xl border border-[#ff5151]/30 bg-[#310808]/95 px-4 py-3 text-sm text-[#ffb0b0]">{error}</p>}
     </main>
