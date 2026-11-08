@@ -64,9 +64,11 @@ export function FocusRhythmHeatmap({ endDate }: { endDate: string }) {
       const key = dateKey(date);
       return date < period.start || date > end ? null : { key, date, summary: byDate.get(key) };
     }));
-    const monthLabels = weeks.map((week) => {
+    const monthLabels = weeks.map((week, weekIndex) => {
+      const monthStart = week.find((day) => day?.date.getDate() === 1);
       const first = week.find(Boolean);
-      return first && first.date.getDate() <= 7 ? first.date.toLocaleDateString(undefined, { month: "short" }) : "";
+      const labelDay = monthStart ?? (weekIndex === 0 ? first : null);
+      return labelDay ? labelDay.date.toLocaleDateString(undefined, { month: "short" }) : "";
     });
     return { weeks, byDate, monthLabels };
   }, [endDate, period.start, summary]);
