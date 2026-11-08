@@ -66,7 +66,7 @@ export function FocusDashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8">
+    <main className="orbit-ambient-shell min-h-screen bg-[#040604] px-4 py-6 text-[#effaf1] sm:px-8">
       <OrbitNav className="fixed left-5 top-24 z-20 hidden w-52 xl:block" />
       <div className="mx-auto max-w-5xl xl:ml-[17rem] xl:mr-8">
         <header><p className="text-xs font-bold uppercase tracking-[.18em] text-[#8dffbb]">Momentum</p><h1 className="mt-2 text-4xl font-semibold tracking-[-.04em] text-white">Your attention, visible.</h1><p className="mt-3 max-w-xl leading-7 text-[#94a399]">Every focused minute and kept promise becomes part of your daily history.</p></header>
